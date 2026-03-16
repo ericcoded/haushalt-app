@@ -286,13 +286,24 @@
   const SUPABASE_URL = 'https://awvcltzpqxfnuwikbiyl.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3dmNsdHpwcXhmbnV3aWtiaXlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODk3NzIsImV4cCI6MjA4OTE2NTc3Mn0.-UytAIHmnShsMP20Gzym9rlCMZaFA7ql0R61kn9HhkE';
   const { createClient } = supabase;
-  if (navigator.locks) {
-    const _request = navigator.locks.request.bind(navigator.locks);
-    navigator.locks.request = (name, ...args) => {
-      const fn = args[args.length - 1];
-      if (typeof fn === 'function') return fn();
-      return _request(name, ...args);
-    };
+
+  // Workaround: Web Locks API Bug in Chrome + Supabase
+  // Problem: Supabase cached navigator.locks.request als direkte Referenz,
+  // daher reicht eine einfache Property-Zuweisung nicht.
+  // Lösung: navigator.locks komplett auf undefined setzen → Supabase nutzt
+  // seinen eingebauten In-Memory-Mutex als Fallback.
+  if (typeof navigator !== 'undefined' && 'locks' in navigator) {
+    try {
+      Object.defineProperty(navigator, 'locks', { get: () => undefined, configurable: true });
+    } catch(e) {
+      // Fallback: request direkt überschreiben
+      try {
+        navigator.locks.request = async (name, optionsOrCb, cb) => {
+          const fn = typeof cb === 'function' ? cb : optionsOrCb;
+          return fn?.();
+        };
+      } catch(_) {}
+    }
   }
 
   const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
@@ -705,7 +716,35 @@
 
   async function initAuth() {
     try {
-      const { data: { session } } = await db.auth.getSession();
+      let session = null;
+
+      try {
+        // Timeout-Schutz falls getSession() trotz Web-Locks-Fix hängt
+        const result = await Promise.race([
+          db.auth.getSession(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('auth-timeout')), 5000))
+        ]);
+        session = result?.data?.session;
+      } catch(e) {
+        if (e.message === 'auth-timeout') {
+          // Fallback: Session direkt aus localStorage lesen
+          try {
+            const raw = localStorage.getItem('hp-v4');
+            if (raw) {
+              const stored = JSON.parse(raw);
+              if (stored?.access_token && stored?.refresh_token) {
+                // Session in den Supabase-Client laden damit API-Calls funktionieren
+                const { data } = await db.auth.setSession({
+                  access_token: stored.access_token,
+                  refresh_token: stored.refresh_token
+                });
+                session = data?.session;
+              }
+            }
+          } catch(_) {}
+        }
+      }
+
       if (session?.user) {
         currentUser = session.user;
         const { data: mitglied } = await db
@@ -727,9 +766,11 @@
     }
   }
 
-  // Auth state changes (login/logout)
+  // Auth state changes (login/logout/session restore)
+  // INITIAL_SESSION: feuert beim App-Start wenn Supabase eine gespeicherte Session findet
+  // SIGNED_IN: feuert bei explizitem Login (Magic Link, OAuth)
   db.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' && session?.user && !currentUser) {
+    if ((event === 'INITIAL_SESSION' || event === 'SIGNED_IN') && session?.user && !currentUser) {
       currentUser = session.user;
       const { data: mitglied } = await db
         .from('haushalt_mitglieder')
@@ -742,6 +783,8 @@
       } else {
         showScreen('setup');
       }
+    } else if (event === 'INITIAL_SESSION' && !session && !currentUser) {
+      showScreen('login');
     } else if (event === 'SIGNED_OUT') {
       currentUser = null;
       currentHaushalt = null;
