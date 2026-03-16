@@ -312,13 +312,13 @@
       flowType: 'implicit'
     },
     global: {
-      // Token bei jedem API-Call direkt aus localStorage injizieren
+      // Token bei jedem API-Call aus localStorage überschreiben.
+      // WICHTIG: Supabase setzt ohne aktive Session immer den Anon-Key als
+      // Authorization-Header — wir müssen ihn immer mit dem User-Token ersetzen.
       fetch: async (url, init = {}) => {
         const headers = new Headers(init?.headers);
-        if (!headers.has('Authorization')) {
-          const s = getStoredSession();
-          if (s?.access_token) headers.set('Authorization', `Bearer ${s.access_token}`);
-        }
+        const s = getStoredSession();
+        if (s?.access_token) headers.set('Authorization', `Bearer ${s.access_token}`);
         return fetch(url, { ...init, headers });
       }
     }
