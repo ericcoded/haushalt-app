@@ -660,24 +660,21 @@
 
   // URL Error Handler
   const hash = window.location.hash;
-  if (hash.includes('error=')) {
-    const params = new URLSearchParams(hash.replace('#', ''));
-    const error = params.get('error_description') || 'Ein Fehler ist aufgetreten.';
-    if (error.includes('expired') || error.includes('invalid')) {
-      window.location.hash = '';
-      showScreen('login');
-      setTimeout(() => {
-        document.getElementById('login-form-wrap').innerHTML = `
-          <div style="background:#fff4d6;border:1px solid #f0b429;border-radius:10px;padding:14px;margin-bottom:12px;font-size:13px;color:#8a6200;line-height:1.5">
-            Der Link ist abgelaufen. Bitte fordere einen neuen an.
-          </div>
-          <label class="login-label">Deine E-Mail-Adresse</label>
-          <input type="email" class="login-input" id="login-email" placeholder="du@beispiel.de" />
-          <button class="login-btn" id="login-btn" onclick="sendMagicLink()">Neuen Link senden ✨</button>
-          <p class="login-hint">Du bekommst einen neuen Link per E-Mail.</p>
-        `;
-      }, 100);
-    }
+  const hasError = hash.includes('error=');
+  if (hasError) {
+    window.location.hash = '';
+    showScreen('login');
+    setTimeout(() => {
+      document.getElementById('login-form-wrap').innerHTML = `
+        <div style="background:#fff4d6;border:1px solid #f0b429;border-radius:10px;padding:14px;margin-bottom:12px;font-size:13px;color:#8a6200;line-height:1.5">
+          Der Link ist abgelaufen. Bitte fordere einen neuen an.
+        </div>
+        <label class="login-label">Deine E-Mail-Adresse</label>
+        <input type="email" class="login-input" id="login-email" placeholder="du@beispiel.de" />
+        <button class="login-btn" id="login-btn" onclick="sendMagicLink()">Neuen Link senden ✨</button>
+        <p class="login-hint">Du bekommst einen neuen Link per E-Mail.</p>
+      `;
+    }, 100);
   }
 
   async function initAuth() {
@@ -726,7 +723,7 @@
     }
   });
 
-  initAuth();
+  if (!hasError) initAuth();
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations().then(regs => {
