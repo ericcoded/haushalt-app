@@ -287,35 +287,40 @@
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3dmNsdHpwcXhmbnV3aWtiaXlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODk3NzIsImV4cCI6MjA4OTE2NTc3Mn0.-UytAIHmnShsMP20Gzym9rlCMZaFA7ql0R61kn9HhkE';
   const { createClient } = supabase;
 
-  // Workaround: Web Locks API Bug in Chrome + Supabase
-  // navigator.locks ist in Chrome eine native non-configurable Property →
-  // Object.defineProperty schlägt stillschweigend fehl.
-  // Zuverlässigste Methode: LockManager.prototype direkt patchen,
-  // da prototype-Methoden immer überschreibbar sind.
-  try {
-    if (typeof LockManager !== 'undefined') {
-      LockManager.prototype.request = async function(name, optionsOrCb, cb) {
-        const fn = typeof cb === 'function' ? cb : optionsOrCb;
-        return fn?.();
-      };
-    }
-  } catch(e) {
-    // Fallback 1: Object.defineProperty
-    try {
-      Object.defineProperty(navigator, 'locks', { get: () => undefined, configurable: true });
-    } catch(_) {
-      // Fallback 2: direkte Zuweisung
-      try { navigator.locks.request = async (n, a, b) => (typeof b === 'function' ? b : a)?.(); } catch(__) {}
-    }
+  // --- Session-Management ohne Web Locks ---
+  // Supabase's persistSession:true nutzt intern Web Locks API → hängt in Chrome.
+  // Lösung: persistSession:false + manuelles localStorage-Management.
+  // Der custom fetch injiziert das Token bei JEDEM API-Call direkt aus localStorage.
+
+  const STORAGE_KEY = 'hp-v4';
+
+  function getStoredSession() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch(e) { return null; }
+  }
+  function saveStoredSession(s) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch(e) {}
+  }
+  function clearStoredSession() {
+    try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
   }
 
   const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
     auth: {
-      persistSession: true,
-      storageKey: 'hp-v4',
-      autoRefreshToken: true,
-      detectSessionInUrl: true,
+      persistSession: false,     // Kein Supabase-Storage → kein Web Locks
+      autoRefreshToken: false,   // Kein Auto-Refresh über Web Locks
+      detectSessionInUrl: true,  // Magic Link / OAuth Hash verarbeiten
       flowType: 'implicit'
+    },
+    global: {
+      // Token bei jedem API-Call direkt aus localStorage injizieren
+      fetch: async (url, init = {}) => {
+        const headers = new Headers(init?.headers);
+        if (!headers.has('Authorization')) {
+          const s = getStoredSession();
+          if (s?.access_token) headers.set('Authorization', `Bearer ${s.access_token}`);
+        }
+        return fetch(url, { ...init, headers });
+      }
     }
   });
 
@@ -457,9 +462,11 @@
   }
 
   async function logout() {
-    await db.auth.signOut();
-    currentUser = null; currentHaushalt = null;
+    clearStoredSession();
+    currentUser = null;
+    currentHaushalt = null;
     showScreen('login');
+    db.auth.signOut().catch(() => {});
   }
 
   async function loadMembers() {
@@ -717,64 +724,8 @@
     }, 100);
   }
 
-  async function initAuth() {
+  async function loadHaushaltAndStart() {
     try {
-      let session = null;
-
-      try {
-        // Timeout-Schutz falls getSession() trotz Web-Locks-Fix hängt
-        const result = await Promise.race([
-          db.auth.getSession(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('auth-timeout')), 5000))
-        ]);
-        session = result?.data?.session;
-      } catch(e) {
-        if (e.message === 'auth-timeout') {
-          // Fallback: Session direkt aus localStorage lesen
-          try {
-            const raw = localStorage.getItem('hp-v4');
-            if (raw) {
-              const stored = JSON.parse(raw);
-              if (stored?.access_token && stored?.refresh_token) {
-                // Session in den Supabase-Client laden damit API-Calls funktionieren
-                const { data } = await db.auth.setSession({
-                  access_token: stored.access_token,
-                  refresh_token: stored.refresh_token
-                });
-                session = data?.session;
-              }
-            }
-          } catch(_) {}
-        }
-      }
-
-      if (session?.user) {
-        currentUser = session.user;
-        const { data: mitglied } = await db
-          .from('haushalt_mitglieder')
-          .select('haushalt_id, haushalte(*)')
-          .eq('user_id', currentUser.id)
-          .single();
-        if (mitglied?.haushalte) {
-          currentHaushalt = mitglied.haushalte;
-          startApp();
-        } else {
-          showScreen('setup');
-        }
-      } else {
-        showScreen('login');
-      }
-    } catch (e) {
-      showScreen('login');
-    }
-  }
-
-  // Auth state changes (login/logout/session restore)
-  // INITIAL_SESSION: feuert beim App-Start wenn Supabase eine gespeicherte Session findet
-  // SIGNED_IN: feuert bei explizitem Login (Magic Link, OAuth)
-  db.auth.onAuthStateChange(async (event, session) => {
-    if ((event === 'INITIAL_SESSION' || event === 'SIGNED_IN') && session?.user && !currentUser) {
-      currentUser = session.user;
       const { data: mitglied } = await db
         .from('haushalt_mitglieder')
         .select('haushalt_id, haushalte(*)')
@@ -786,9 +737,35 @@
       } else {
         showScreen('setup');
       }
-    } else if (event === 'INITIAL_SESSION' && !session && !currentUser) {
+    } catch(e) {
       showScreen('login');
+    }
+  }
+
+  async function initAuth() {
+    // Session direkt aus localStorage lesen — kein Supabase-Auth-Call, kein Web Locks
+    const stored = getStoredSession();
+    if (!stored?.user?.id || !stored?.access_token) {
+      showScreen('login');
+      return;
+    }
+    currentUser = stored.user;
+    await loadHaushaltAndStart();
+  }
+
+  // Auth state changes: Session manuell in localStorage speichern
+  // (da persistSession:false Supabase das nicht mehr selbst macht)
+  db.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session?.user) {
+      saveStoredSession(session);
+      if (!currentUser) {
+        currentUser = session.user;
+        await loadHaushaltAndStart();
+      }
+    } else if (event === 'TOKEN_REFRESHED' && session) {
+      saveStoredSession(session);
     } else if (event === 'SIGNED_OUT') {
+      clearStoredSession();
       currentUser = null;
       currentHaushalt = null;
       showScreen('login');
