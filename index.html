@@ -140,6 +140,11 @@
 </head>
 <body>
 
+<!-- LOADING -->
+<div id="screen-loading">
+  <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-size:36px">🏠</div>
+</div>
+
 <!-- LOGIN -->
 <div id="screen-login" style="display:none">
   <div class="login-wrap">
@@ -331,7 +336,7 @@
   }
 
   function showScreen(screen) {
-    ['login','setup','app'].forEach(s =>
+    ['loading','login','setup','app'].forEach(s =>
       document.getElementById('screen-' + s).style.display = s === screen ? 'block' : 'none'
     );
   }
