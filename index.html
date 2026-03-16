@@ -288,21 +288,24 @@
   const { createClient } = supabase;
 
   // Workaround: Web Locks API Bug in Chrome + Supabase
-  // Problem: Supabase cached navigator.locks.request als direkte Referenz,
-  // daher reicht eine einfache Property-Zuweisung nicht.
-  // Lösung: navigator.locks komplett auf undefined setzen → Supabase nutzt
-  // seinen eingebauten In-Memory-Mutex als Fallback.
-  if (typeof navigator !== 'undefined' && 'locks' in navigator) {
+  // navigator.locks ist in Chrome eine native non-configurable Property →
+  // Object.defineProperty schlägt stillschweigend fehl.
+  // Zuverlässigste Methode: LockManager.prototype direkt patchen,
+  // da prototype-Methoden immer überschreibbar sind.
+  try {
+    if (typeof LockManager !== 'undefined') {
+      LockManager.prototype.request = async function(name, optionsOrCb, cb) {
+        const fn = typeof cb === 'function' ? cb : optionsOrCb;
+        return fn?.();
+      };
+    }
+  } catch(e) {
+    // Fallback 1: Object.defineProperty
     try {
       Object.defineProperty(navigator, 'locks', { get: () => undefined, configurable: true });
-    } catch(e) {
-      // Fallback: request direkt überschreiben
-      try {
-        navigator.locks.request = async (name, optionsOrCb, cb) => {
-          const fn = typeof cb === 'function' ? cb : optionsOrCb;
-          return fn?.();
-        };
-      } catch(_) {}
+    } catch(_) {
+      // Fallback 2: direkte Zuweisung
+      try { navigator.locks.request = async (n, a, b) => (typeof b === 'function' ? b : a)?.(); } catch(__) {}
     }
   }
 
