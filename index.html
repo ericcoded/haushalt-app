@@ -136,6 +136,13 @@
 
     .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: #3C3489; color: #EEEDFE; padding: 10px 20px; border-radius: 12px; font-size: 14px; font-weight: 500; transition: transform 0.3s ease; z-index: 999; white-space: nowrap; pointer-events: none; }
     .toast.show { transform: translateX(-50%) translateY(0); }
+    .members-bar { display: flex; align-items: center; gap: 6px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+    .member-chip { display: flex; align-items: center; gap: 6px; background: white; border: 1px solid #e8e8e3; border-radius: 99px; padding: 4px 10px 4px 4px; }
+    .member-avatar { width: 24px; height: 24px; border-radius: 50%; background: #eeedfe; color: #534ab7; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+    .member-email { font-size: 12px; color: #555; }
+    .member-you { font-size: 10px; color: #aaa; margin-left: 2px; }
+    .logout-full { background: none; border: 1px solid #e0e0d8; border-radius: 8px; padding: 6px 12px; font-size: 12px; color: #aaa; cursor: pointer; }
+    .logout-full:hover { background: #f5f5f0; color: #666; }
   </style>
 </head>
 <body>
@@ -198,7 +205,7 @@
       </div>
       <div class="header-right">
         <span class="code-badge" id="haushalt-code" onclick="copyCode()" title="Code kopieren"></span>
-        <button class="logout-btn" onclick="logout()">↩</button>
+        <button class="logout-full" onclick="logout()">Ausloggen</button>
       </div>
     </div>
 
@@ -208,6 +215,8 @@
     </div>
 
     <div class="sync-indicator" id="sync-status">Verbinde...</div>
+
+    <div class="members-bar" id="members-bar"></div>
 
     <div id="tab-vorrat">
       <div id="starter-banner" style="display:none">
@@ -367,7 +376,7 @@
       created_by: currentUser.id
     }).select().single();
     if (error) { alert('Fehler: ' + error.message); return; }
-    await db.from('haushalt_mitglieder').insert({ haushalt_id: data.id, user_id: currentUser.id });
+    await db.from('haushalt_mitglieder').insert({ haushalt_id: data.id, user_id: currentUser.id, email: currentUser.email });
     currentHaushalt = data;
     startApp();
   }
@@ -377,7 +386,7 @@
     if (!code) return;
     const { data, error } = await db.from('haushalte').select('*').eq('code', code).single();
     if (error || !data) { alert('Code nicht gefunden. Bitte prüfe den Code.'); return; }
-    await db.from('haushalt_mitglieder').insert({ haushalt_id: data.id, user_id: currentUser.id });
+    await db.from('haushalt_mitglieder').insert({ haushalt_id: data.id, user_id: currentUser.id, email: currentUser.email });
     currentHaushalt = data;
     startApp();
   }
@@ -394,11 +403,33 @@
     showScreen('login');
   }
 
+  async function loadMembers() {
+    const { data } = await db
+      .from('haushalt_mitglieder')
+      .select('user_id, email')
+      .eq('haushalt_id', currentHaushalt.id);
+    if (!data) return;
+    const bar = document.getElementById('members-bar');
+    bar.innerHTML = data.map(m => {
+      const isMe = m.user_id === currentUser.id;
+      const initial = (m.email || '?')[0].toUpperCase();
+      const color = isMe ? '#eeedfe' : '#e1f5ee';
+      const textColor = isMe ? '#534ab7' : '#0f6e56';
+      const email = m.email ? m.email.split('@')[0] : 'Mitglied';
+      return `<div class="member-chip">
+        <div class="member-avatar" style="background:${color};color:${textColor}">${initial}</div>
+        <span class="member-email">${email}</span>
+        ${isMe ? '<span class="member-you">(du)</span>' : ''}
+      </div>`;
+    }).join('');
+  }
+
   function startApp() {
     document.getElementById('user-email-display').textContent = currentUser.email;
     document.getElementById('haushalt-code').textContent = currentHaushalt.code;
     showScreen('app');
     loadItems();
+    loadMembers();
     subscribeRealtime();
   }
 
