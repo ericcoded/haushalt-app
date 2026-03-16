@@ -280,9 +280,12 @@
   const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
     auth: {
       persistSession: true,
-      storageKey: 'haushalt-auth',
+      storageKey: 'hp-auth-v2',
       storage: window.localStorage,
       autoRefreshToken: true,
+      lock: async (name, acquireTimeout, fn) => {
+        return await fn();
+      }
     }
   });
 
