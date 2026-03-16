@@ -682,9 +682,7 @@
 
   async function initAuth() {
     try {
-      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000));
-      const sessionPromise = db.auth.getSession();
-      const { data: { session } } = await Promise.race([sessionPromise, timeout]);
+      const { data: { session } } = await db.auth.getSession();
       if (session?.user) {
         currentUser = session.user;
         const { data: mitglied } = await db
