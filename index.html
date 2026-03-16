@@ -749,6 +749,13 @@
       showScreen('login');
       return;
     }
+    // Abgelaufenes Token erkennen und löschen → Login erzwingen
+    const now = Math.floor(Date.now() / 1000);
+    if (stored.expires_at && stored.expires_at < now) {
+      clearStoredSession();
+      showScreen('login');
+      return;
+    }
     currentUser = stored.user;
     await loadHaushaltAndStart();
   }
