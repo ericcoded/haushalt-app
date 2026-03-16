@@ -680,11 +680,10 @@
     }
   }
 
-  // Auth + Haushalt check
-  db.auth.onAuthStateChange(async (event, session) => {
+  async function initAuth() {
+    const { data: { session } } = await db.auth.getSession();
     if (session?.user) {
       currentUser = session.user;
-      // Haushalt suchen
       const { data: mitglied } = await db
         .from('haushalt_mitglieder')
         .select('haushalt_id, haushalte(*)')
@@ -699,7 +698,31 @@
     } else {
       showScreen('login');
     }
+  }
+
+  // Auth state changes (login/logout)
+  db.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session?.user && !currentUser) {
+      currentUser = session.user;
+      const { data: mitglied } = await db
+        .from('haushalt_mitglieder')
+        .select('haushalt_id, haushalte(*)')
+        .eq('user_id', currentUser.id)
+        .single();
+      if (mitglied?.haushalte) {
+        currentHaushalt = mitglied.haushalte;
+        startApp();
+      } else {
+        showScreen('setup');
+      }
+    } else if (event === 'SIGNED_OUT') {
+      currentUser = null;
+      currentHaushalt = null;
+      showScreen('login');
+    }
   });
+
+  initAuth();
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.getRegistrations().then(regs => {
