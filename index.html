@@ -265,7 +265,14 @@
   const SUPABASE_URL = 'https://awvcltzpqxfnuwikbiyl.supabase.co';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3dmNsdHpwcXhmbnV3aWtiaXlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODk3NzIsImV4cCI6MjA4OTE2NTc3Mn0.-UytAIHmnShsMP20Gzym9rlCMZaFA7ql0R61kn9HhkE';
   const { createClient } = supabase;
-  const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+  const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: {
+      persistSession: true,
+      storageKey: 'haushalt-auth',
+      storage: window.localStorage,
+      autoRefreshToken: true,
+    }
+  });
 
   const KATEGORIEN = {
     'Küche':     { icon: '🍳', bg: 'bg-küche' },
