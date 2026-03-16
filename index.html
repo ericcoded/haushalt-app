@@ -681,21 +681,27 @@
   }
 
   async function initAuth() {
-    const { data: { session } } = await db.auth.getSession();
-    if (session?.user) {
-      currentUser = session.user;
-      const { data: mitglied } = await db
-        .from('haushalt_mitglieder')
-        .select('haushalt_id, haushalte(*)')
-        .eq('user_id', currentUser.id)
-        .single();
-      if (mitglied?.haushalte) {
-        currentHaushalt = mitglied.haushalte;
-        startApp();
+    try {
+      const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000));
+      const sessionPromise = db.auth.getSession();
+      const { data: { session } } = await Promise.race([sessionPromise, timeout]);
+      if (session?.user) {
+        currentUser = session.user;
+        const { data: mitglied } = await db
+          .from('haushalt_mitglieder')
+          .select('haushalt_id, haushalte(*)')
+          .eq('user_id', currentUser.id)
+          .single();
+        if (mitglied?.haushalte) {
+          currentHaushalt = mitglied.haushalte;
+          startApp();
+        } else {
+          showScreen('setup');
+        }
       } else {
-        showScreen('setup');
+        showScreen('login');
       }
-    } else {
+    } catch (e) {
       showScreen('login');
     }
   }
