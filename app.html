@@ -507,7 +507,7 @@
     btn.disabled = true; btn.textContent = 'Wird gesendet...';
     const { error } = await db.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: 'https://haushaltspro.de' }
+      options: { emailRedirectTo: 'https://haushaltspro.de/app' }
     });
     if (error) {
       btn.disabled = false; btn.textContent = 'Magic Link senden ✨';
