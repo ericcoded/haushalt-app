@@ -146,10 +146,13 @@
     .frequently-section { margin-bottom: 1.25rem; }
     .frequently-title { font-size: 12px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
     .frequently-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-    .freq-chip { display: flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 99px; border: 1px solid #e0e0d8; background: white; font-size: 13px; color: #555; cursor: pointer; transition: all 0.15s; }
+    .freq-chip { display: inline-flex; align-items: center; gap: 5px; padding: 5px 8px 5px 12px; border-radius: 99px; border: 1px solid #e0e0d8; background: white; font-size: 13px; color: #555; transition: all 0.15s; }
     .freq-chip:hover { border-color: #7f77dd; color: #7f77dd; background: #f5f4ff; }
+    .freq-chip-main { display: flex; align-items: center; gap: 5px; cursor: pointer; }
     .freq-chip-emoji { font-size: 14px; }
     .freq-chip-count { font-size: 10px; color: #aaa; background: #f0f0eb; border-radius: 99px; padding: 1px 6px; }
+    .freq-chip-del { background: none; border: none; cursor: pointer; color: #ccc; font-size: 13px; padding: 0 2px; border-radius: 4px; line-height: 1; margin-left: 2px; }
+    .freq-chip-del:hover { color: #e24b4a; }
 
     /* AUFGABEN FORMULAR */
     .aufgaben-form { background: white; border: 1px solid #e8e8e3; border-radius: 14px; padding: 1rem; margin-bottom: 1.25rem; }
@@ -925,21 +928,44 @@
     section.style.display = 'block';
     chips.innerHTML = top.map(i => {
       const alreadyOn = onList.has(i.name.toLowerCase());
-      return `<button class="freq-chip ${alreadyOn ? 'added' : ''}" onclick="${alreadyOn ? '' : `addFromFrequently('${i.name.replace(/'/g, "\'")}', '${i.kategorie || 'Sonstiges'}')`}" ${alreadyOn ? 'disabled style="opacity:0.5;cursor:default"' : ''}>
-        <span class="freq-chip-emoji">${getEmoji(i.name)}</span>
-        ${i.name}
-        <span class="freq-chip-count">${i.buy_count}×</span>
-      </button>`;
+      const safeName = i.name.replace(/'/g, "\\'");
+      const safeKat = (i.kategorie || 'Sonstiges').replace(/'/g, "\\'");
+      return `<div class="freq-chip ${alreadyOn ? '' : ''}" style="${alreadyOn ? 'opacity:0.5' : ''}">
+        <span class="freq-chip-main" onclick="${alreadyOn ? '' : `addFromFrequently('${safeName}','${safeKat}')`}" style="${alreadyOn ? 'cursor:default' : ''}">
+          <span class="freq-chip-emoji">${getEmoji(i.name)}</span>
+          ${i.name}
+          <span class="freq-chip-count">${i.buy_count}×</span>
+        </span>
+        <button class="freq-chip-del" onclick="resetFreqItem('${i.id}','${i.typ}')" title="Aus Liste entfernen">×</button>
+      </div>`;
     }).join('');
   }
 
   async function addFromFrequently(name, kategorie) {
     setSync('syncing', 'Speichert...');
-    const counter = items.find(i => i.status === 'counter' && i.name.toLowerCase() === name.toLowerCase());
-    if (counter) {
-      await db.from('haushalt_items').update({ bought: false, status: 'ok' }).eq('id', counter.id);
+    const vorratItem = items.find(i => i.typ === 'vorrat' && i.name.toLowerCase() === name.toLowerCase());
+    if (vorratItem) {
+      // Vorrats-Item → als source='vorrat' auf die Einkaufsliste (wie bei "~" / "✕")
+      const already = items.find(i => i.typ === 'einkauf' && i.source === 'vorrat' && i.name.toLowerCase() === name.toLowerCase());
+      if (!already) await db.from('haushalt_items').insert({ name: vorratItem.name, kategorie: vorratItem.kategorie || kategorie, status: 'ok', typ: 'einkauf', source: 'vorrat', bought: false, haushalt_id: currentHaushalt.id });
     } else {
-      await db.from('haushalt_items').insert({ name, kategorie, status: 'ok', typ: 'einkauf', source: 'manuell', bought: false, haushalt_id: currentHaushalt.id });
+      // Manuell-Counter → wiederverwenden oder neu anlegen
+      const counter = items.find(i => i.status === 'counter' && i.name.toLowerCase() === name.toLowerCase());
+      if (counter) {
+        await db.from('haushalt_items').update({ bought: false, status: 'ok' }).eq('id', counter.id);
+      } else {
+        await db.from('haushalt_items').insert({ name, kategorie, status: 'ok', typ: 'einkauf', source: 'manuell', bought: false, haushalt_id: currentHaushalt.id });
+      }
+    }
+    await loadItems();
+  }
+
+  async function resetFreqItem(id, typ) {
+    setSync('syncing', 'Löscht...');
+    if (typ === 'vorrat') {
+      await db.from('haushalt_items').update({ buy_count: 0 }).eq('id', id);
+    } else {
+      await db.from('haushalt_items').delete().eq('id', id);
     }
     await loadItems();
   }
