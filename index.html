@@ -184,6 +184,20 @@
     .aufgabe-notiz { font-size: 13px; color: #666; margin-top: 8px; line-height: 1.4; }
     .aufg-link { color: #7f77dd; text-decoration: none; font-size: 12px; display: inline-flex; align-items: center; gap: 3px; margin-top: 6px; }
     .aufg-link:hover { text-decoration: underline; }
+    .aufg-edit { background: none; border: none; cursor: pointer; color: #ccc; font-size: 14px; padding: 2px 4px; border-radius: 6px; flex-shrink: 0; }
+    .aufg-edit:hover { color: #7f77dd; background: #f0f0ff; }
+
+    /* AUFGABEN EDIT-MODUS */
+    .aufgabe-card.editing input, .aufgabe-card.editing select, .aufgabe-card.editing textarea { width: 100%; padding: 8px 10px; border: 1px solid #e0e0d8; border-radius: 8px; font-size: 13px; background: white; outline: none; font-family: inherit; margin-bottom: 6px; box-sizing: border-box; }
+    .aufgabe-card.editing input:focus, .aufgabe-card.editing select:focus, .aufgabe-card.editing textarea:focus { border-color: #7f77dd; }
+    .aufgabe-card.editing textarea { resize: none; height: 56px; }
+    .edit-btns { display: flex; gap: 8px; margin-top: 2px; }
+    .cancel-btn { flex: 1; background: white; color: #888; border: 1px solid #e0e0d8; border-radius: 10px; padding: 10px; font-size: 14px; cursor: pointer; }
+    .cancel-btn:hover { background: #f5f5f0; }
+
+    /* SORT-LEISTE */
+    .sort-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; }
+    .sort-label { font-size: 12px; color: #aaa; white-space: nowrap; font-weight: 500; }
   </style>
 </head>
 <body>
@@ -343,6 +357,15 @@
         </div>
         <button class="primary" style="width:100%" onclick="addAufgabe()">+ Hinzufügen</button>
       </div>
+      <div class="sort-bar">
+        <span class="sort-label">Sortierung:</span>
+        <div class="cat-filter" style="margin:0;padding:0">
+          <button class="cat-pill active" id="sort-prioritaet" onclick="setAufgabenSort('prioritaet')">Priorität</button>
+          <button class="cat-pill" id="sort-faellig_am" onclick="setAufgabenSort('faellig_am')">Datum</button>
+          <button class="cat-pill" id="sort-kosten" onclick="setAufgabenSort('kosten')">Kosten</button>
+          <button class="cat-pill" id="sort-zeitaufwand" onclick="setAufgabenSort('zeitaufwand')">Zeitaufwand</button>
+        </div>
+      </div>
       <div id="aufgaben-list"></div>
       <div id="aufgaben-empty" class="empty" style="display:none">
         <div class="empty-icon">✅</div>
@@ -464,6 +487,8 @@
 
   let items = [];
   let aufgaben = [];
+  let aufgabenSort = 'prioritaet';
+  let aufgabenEditId = null;
   let activeFilter = 'Alle';
   let currentUser = null;
   let currentHaushalt = null;
@@ -650,6 +675,49 @@
     setSync('', 'Synchronisiert ✓');
   }
 
+  function esc(s) {
+    return (s || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function setAufgabenSort(sort) {
+    aufgabenSort = sort;
+    document.querySelectorAll('.sort-bar .cat-pill').forEach(el => el.classList.remove('active'));
+    const btn = document.getElementById('sort-' + sort);
+    if (btn) btn.classList.add('active');
+    renderAufgaben();
+  }
+
+  function editAufgabe(id) {
+    aufgabenEditId = id;
+    renderAufgaben();
+  }
+
+  function cancelEdit() {
+    aufgabenEditId = null;
+    renderAufgaben();
+  }
+
+  async function saveAufgabeEdit(id) {
+    const titel = document.getElementById('edit-titel').value.trim();
+    if (!titel) return;
+    const kostenRaw = document.getElementById('edit-kosten').value;
+    setSync('syncing', 'Speichert...');
+    await db.from('aufgaben').update({
+      titel,
+      prioritaet: parseInt(document.getElementById('edit-prio').value),
+      status: document.getElementById('edit-status').value,
+      faellig_am: document.getElementById('edit-faellig').value || null,
+      zugewiesen_an: document.getElementById('edit-zugewiesen').value.trim() || null,
+      zeitaufwand: document.getElementById('edit-zeitaufwand').value.trim() || null,
+      kosten: kostenRaw ? parseFloat(kostenRaw) : null,
+      link: document.getElementById('edit-link').value.trim() || null,
+      notizen: document.getElementById('edit-notizen').value.trim() || null,
+    }).eq('id', id);
+    aufgabenEditId = null;
+    await loadAufgaben();
+    setSync('', 'Synchronisiert ✓');
+  }
+
   function renderAufgaben() {
     const list = document.getElementById('aufgaben-list');
     const empty = document.getElementById('aufgaben-empty');
@@ -662,15 +730,61 @@
     empty.style.display = 'none';
     const prioLabel = { 1: '🔴 Hoch', 2: '🟡 Mittel', 3: '🟢 Niedrig' };
     const prioClass = { 1: 'prio-1', 2: 'prio-2', 3: 'prio-3' };
-    list.innerHTML = aufgaben.map(a => {
+
+    const sorted = [...aufgaben].sort((a, b) => {
+      if (aufgabenSort === 'prioritaet') return (a.prioritaet || 2) - (b.prioritaet || 2);
+      if (aufgabenSort === 'kosten') return (b.kosten || 0) - (a.kosten || 0);
+      if (aufgabenSort === 'zeitaufwand') return (a.zeitaufwand || '').localeCompare(b.zeitaufwand || '');
+      if (aufgabenSort === 'faellig_am') {
+        const da = a.faellig_am ? new Date(a.faellig_am) : new Date('9999-12-31');
+        const db2 = b.faellig_am ? new Date(b.faellig_am) : new Date('9999-12-31');
+        return da - db2;
+      }
+      return 0;
+    });
+
+    list.innerHTML = sorted.map(a => {
       const p = a.prioritaet || 2;
       const st = a.status || 'offen';
+
+      if (aufgabenEditId === a.id) {
+        return `<div class="aufgabe-card editing">
+          <input id="edit-titel" value="${esc(a.titel)}" placeholder="Titel" />
+          <div class="form-row">
+            <select id="edit-prio">
+              <option value="1" ${p===1?'selected':''}>🔴 Hoch</option>
+              <option value="2" ${p===2?'selected':''}>🟡 Mittel</option>
+              <option value="3" ${p===3?'selected':''}>🟢 Niedrig</option>
+            </select>
+            <select id="edit-status">
+              <option value="offen" ${st==='offen'?'selected':''}>Offen</option>
+              <option value="in_arbeit" ${st==='in_arbeit'?'selected':''}>In Arbeit</option>
+              <option value="erledigt" ${st==='erledigt'?'selected':''}>Erledigt ✓</option>
+            </select>
+            <input type="date" id="edit-faellig" value="${esc(a.faellig_am||'')}" />
+          </div>
+          <div class="form-row">
+            <input id="edit-zugewiesen" value="${esc(a.zugewiesen_an||'')}" placeholder="👤 Zugewiesen an" />
+            <input id="edit-zeitaufwand" value="${esc(a.zeitaufwand||'')}" placeholder="⏱ Zeitaufwand" />
+          </div>
+          <div class="form-row">
+            <input type="number" id="edit-kosten" value="${a.kosten!=null?a.kosten:''}" placeholder="💰 Kosten €" step="0.01" min="0" />
+            <input id="edit-link" value="${esc(a.link||'')}" placeholder="🔗 Link (https://...)" />
+          </div>
+          <textarea id="edit-notizen" placeholder="📝 Notizen...">${esc(a.notizen||'')}</textarea>
+          <div class="edit-btns">
+            <button class="primary" style="flex:1" onclick="saveAufgabeEdit('${a.id}')">Speichern</button>
+            <button class="cancel-btn" onclick="cancelEdit()">Abbrechen</button>
+          </div>
+        </div>`;
+      }
+
       const faellig = a.faellig_am ? new Date(a.faellig_am).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit' }) : '';
       const kosten = a.kosten != null ? parseFloat(a.kosten).toLocaleString('de-DE', { minimumFractionDigits: 2 }) + ' €' : '';
       const meta = [
         faellig ? `<span>📅 ${faellig}</span>` : '',
-        a.zugewiesen_an ? `<span>👤 ${a.zugewiesen_an}</span>` : '',
-        a.zeitaufwand ? `<span>⏱ ${a.zeitaufwand}</span>` : '',
+        a.zugewiesen_an ? `<span>👤 ${esc(a.zugewiesen_an)}</span>` : '',
+        a.zeitaufwand ? `<span>⏱ ${esc(a.zeitaufwand)}</span>` : '',
         kosten ? `<span>💰 ${kosten}</span>` : '',
       ].filter(Boolean).join('');
       return `<div class="aufgabe-card ${st === 'erledigt' ? 'erledigt' : ''}">
@@ -681,12 +795,13 @@
             <option value="in_arbeit" ${st==='in_arbeit'?'selected':''}>In Arbeit</option>
             <option value="erledigt" ${st==='erledigt'?'selected':''}>Erledigt ✓</option>
           </select>
+          <button class="aufg-edit" onclick="editAufgabe('${a.id}')" title="Bearbeiten">✏️</button>
           <button class="aufg-del" onclick="delAufgabe('${a.id}')">✕</button>
         </div>
-        <div class="aufgabe-titel">${a.titel}</div>
+        <div class="aufgabe-titel">${esc(a.titel)}</div>
         ${meta ? `<div class="aufgabe-meta">${meta}</div>` : ''}
-        ${a.notizen ? `<div class="aufgabe-notiz">📝 ${a.notizen}</div>` : ''}
-        ${a.link ? `<a href="${a.link}" target="_blank" rel="noopener" class="aufg-link">🔗 Link öffnen</a>` : ''}
+        ${a.notizen ? `<div class="aufgabe-notiz">📝 ${esc(a.notizen)}</div>` : ''}
+        ${a.link ? `<a href="${esc(a.link)}" target="_blank" rel="noopener" class="aufg-link">🔗 Link öffnen</a>` : ''}
       </div>`;
     }).join('');
   }
