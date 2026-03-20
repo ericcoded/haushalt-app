@@ -276,6 +276,9 @@
     <div class="sync-indicator" id="sync-status">Verbinde...</div>
 
     <div class="members-bar" id="members-bar"></div>
+    <div style="text-align:right;margin-top:-10px;margin-bottom:1rem">
+      <button onclick="leaveHaushalt()" style="background:none;border:none;font-size:12px;color:#ccc;cursor:pointer;padding:0">Haushalt verlassen</button>
+    </div>
 
     <div id="tab-vorrat">
       <div id="starter-banner" style="display:none">
@@ -545,6 +548,15 @@
     if (!currentHaushalt) return;
     await navigator.clipboard.writeText(currentHaushalt.code);
     showToast('Code kopiert: ' + currentHaushalt.code);
+  }
+
+  async function leaveHaushalt() {
+    if (!confirm('Haushalt wirklich verlassen? Du kannst danach mit dem Code wieder beitreten.')) return;
+    await db.from('haushalt_mitglieder').delete()
+      .eq('haushalt_id', currentHaushalt.id)
+      .eq('user_id', currentUser.id);
+    currentHaushalt = null;
+    showScreen('setup');
   }
 
   async function logout() {
