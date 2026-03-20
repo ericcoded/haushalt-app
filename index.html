@@ -873,7 +873,22 @@
   async function clearBought() {
     setSync('syncing', 'Speichert...');
     const bought = items.filter(i => i.typ === 'einkauf' && i.bought);
-    for (const i of bought) await db.from('haushalt_items').delete().eq('id', i.id);
+    for (const item of bought) {
+      if (item.source === 'manuell' && (item.buy_count || 0) > 0) {
+        // Gibt es schon einen unsichtbaren Zähler für diesen Namen?
+        const counter = items.find(i => i.status === 'counter' && i.name.toLowerCase() === item.name.toLowerCase() && i.id !== item.id);
+        if (counter) {
+          // buy_count addieren und dieses Item löschen
+          await db.from('haushalt_items').update({ buy_count: (counter.buy_count || 0) + (item.buy_count || 0) }).eq('id', counter.id);
+          await db.from('haushalt_items').delete().eq('id', item.id);
+        } else {
+          // Als unsichtbaren Zähler behalten (status='counter' → wird nicht angezeigt)
+          await db.from('haushalt_items').update({ bought: false, status: 'counter' }).eq('id', item.id);
+        }
+      } else {
+        await db.from('haushalt_items').delete().eq('id', item.id);
+      }
+    }
     await loadItems();
   }
 
@@ -882,12 +897,18 @@
     const name = inp.value.trim(); if (!name) return;
     inp.value = '';
     setSync('syncing', 'Speichert...');
-    await db.from('haushalt_items').insert({ name, kategorie: 'Sonstiges', status: 'ok', typ: 'einkauf', source: 'manuell', bought: false, haushalt_id: currentHaushalt.id });
+    // Gibt es einen unsichtbaren Zähler? Dann wiederverwenden statt neu anlegen
+    const counter = items.find(i => i.status === 'counter' && i.name.toLowerCase() === name.toLowerCase());
+    if (counter) {
+      await db.from('haushalt_items').update({ bought: false, status: 'ok' }).eq('id', counter.id);
+    } else {
+      await db.from('haushalt_items').insert({ name, kategorie: 'Sonstiges', status: 'ok', typ: 'einkauf', source: 'manuell', bought: false, haushalt_id: currentHaushalt.id });
+    }
     await loadItems();
   }
 
   function renderFrequently() {
-    const onList = new Set(items.filter(i => i.typ === 'einkauf' && !i.bought).map(i => i.name.toLowerCase()));
+    const onList = new Set(items.filter(i => i.typ === 'einkauf' && !i.bought && i.status !== 'counter').map(i => i.name.toLowerCase()));
     // Vorrat-Items mit buy_count (durch Supabase korrekt getrackt)
     const vorratItems = items.filter(i => i.typ === 'vorrat' && (i.buy_count || 0) > 0);
     const vorratNamen = new Set(vorratItems.map(i => i.name.toLowerCase()));
@@ -914,7 +935,12 @@
 
   async function addFromFrequently(name, kategorie) {
     setSync('syncing', 'Speichert...');
-    await db.from('haushalt_items').insert({ name, kategorie, status: 'ok', typ: 'einkauf', source: 'manuell', bought: false, haushalt_id: currentHaushalt.id });
+    const counter = items.find(i => i.status === 'counter' && i.name.toLowerCase() === name.toLowerCase());
+    if (counter) {
+      await db.from('haushalt_items').update({ bought: false, status: 'ok' }).eq('id', counter.id);
+    } else {
+      await db.from('haushalt_items').insert({ name, kategorie, status: 'ok', typ: 'einkauf', source: 'manuell', bought: false, haushalt_id: currentHaushalt.id });
+    }
     await loadItems();
   }
 
@@ -936,7 +962,7 @@
     const vorrat = items.filter(i => i.typ === 'vorrat');
     const einkauf = items.filter(i => i.typ === 'einkauf');
     const needAttention = vorrat.filter(i => i.status !== 'ok').length;
-    const toBuy = einkauf.filter(i => !i.bought).length;
+    const toBuy = einkauf.filter(i => !i.bought && i.status !== 'counter').length;
 
     const bv = document.getElementById('badge-vorrat');
     const be = document.getElementById('badge-einkauf');
@@ -971,10 +997,10 @@
     }
     document.getElementById('vorrat-list').innerHTML = vhtml;
 
-    const toBuyItems = einkauf.filter(i => !i.bought);
+    const toBuyItems = einkauf.filter(i => !i.bought && i.status !== 'counter');
     const boughtItems = einkauf.filter(i => i.bought);
     let ehtml = '';
-    if (!einkauf.length) {
+    if (!toBuyItems.length && !boughtItems.length) {
       ehtml = '<div class="empty"><div class="empty-icon">🛒</div>Liste ist leer!<br>Setz mal einen Artikel auf "~" oder "✕".</div>';
     } else {
       const shopByKat = {};
