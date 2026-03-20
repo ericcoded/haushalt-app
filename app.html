@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Unser Haushalt</title>
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Haushalt" />
+  <meta name="theme-color" content="#7f77dd" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f0; min-height: 100vh; }
+
+    /* LOGIN */
+    .login-wrap { max-width: 380px; margin: 0 auto; padding: 3rem 1.5rem; }
+    .login-logo { font-size: 48px; text-align: center; margin-bottom: 1rem; }
+    .login-title { font-size: 22px; font-weight: 600; color: #1a1a1a; text-align: center; margin-bottom: 8px; }
+    .login-sub { font-size: 14px; color: #aaa; text-align: center; margin-bottom: 2rem; line-height: 1.5; }
+    .login-card { background: white; border: 1px solid #e8e8e3; border-radius: 16px; padding: 1.5rem; }
+    .login-label { font-size: 13px; font-weight: 500; color: #555; margin-bottom: 6px; display: block; }
+    .login-input { width: 100%; padding: 11px 14px; border: 1px solid #e0e0d8; border-radius: 10px; font-size: 15px; outline: none; margin-bottom: 12px; }
+    .login-input:focus { border-color: #7f77dd; box-shadow: 0 0 0 3px rgba(127,119,221,0.1); }
+    .login-btn { width: 100%; background: #7f77dd; color: white; border: none; border-radius: 10px; padding: 12px; font-size: 15px; font-weight: 500; cursor: pointer; }
+    .login-btn:hover { background: #6b63c9; }
+    .login-btn:disabled { opacity: 0.6; cursor: default; }
+    .login-hint { font-size: 12px; color: #aaa; text-align: center; margin-top: 12px; line-height: 1.5; }
+    .login-success { background: #e1f5ee; border: 1px solid #1d9e75; border-radius: 10px; padding: 14px; text-align: center; }
+    .login-success-icon { font-size: 28px; margin-bottom: 6px; }
+    .login-success-text { font-size: 14px; color: #0f6e56; line-height: 1.5; }
+
+    /* HAUSHALT SETUP */
+    .setup-wrap { max-width: 380px; margin: 0 auto; padding: 2rem 1.5rem; }
+    .setup-title { font-size: 20px; font-weight: 600; color: #1a1a1a; margin-bottom: 8px; }
+    .setup-sub { font-size: 14px; color: #aaa; margin-bottom: 2rem; line-height: 1.5; }
+    .setup-card { background: white; border: 1px solid #e8e8e3; border-radius: 16px; padding: 1.5rem; margin-bottom: 1rem; }
+    .setup-card-title { font-size: 15px; font-weight: 600; color: #1a1a1a; margin-bottom: 4px; }
+    .setup-card-sub { font-size: 13px; color: #aaa; margin-bottom: 1rem; }
+    .setup-input { width: 100%; padding: 11px 14px; border: 1px solid #e0e0d8; border-radius: 10px; font-size: 15px; outline: none; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px; }
+    .setup-input:focus { border-color: #7f77dd; }
+    .setup-btn { width: 100%; background: #7f77dd; color: white; border: none; border-radius: 10px; padding: 11px; font-size: 14px; font-weight: 500; cursor: pointer; }
+    .setup-btn:hover { background: #6b63c9; }
+    .setup-btn.secondary { background: white; color: #7f77dd; border: 1px solid #7f77dd; margin-top: 8px; }
+    .setup-divider { text-align: center; color: #ccc; font-size: 13px; margin: 1rem 0; }
+
+    /* APP */
+    .app { max-width: 480px; margin: 0 auto; padding: 1.5rem 1rem 5rem; }
+    .app-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
+    .app-title { font-size: 20px; font-weight: 600; color: #1a1a1a; }
+    .app-subtitle { font-size: 12px; color: #aaa; margin-top: 2px; }
+    .header-right { display: flex; align-items: center; gap: 8px; }
+    .code-badge { background: #eeedfe; color: #534ab7; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 99px; letter-spacing: 1px; cursor: pointer; }
+    .logout-btn { background: none; border: 1px solid #e0e0d8; border-radius: 8px; padding: 6px 10px; font-size: 12px; color: #aaa; cursor: pointer; }
+    .logout-btn:hover { background: #f5f5f0; }
+
+    .tabs { display: flex; background: #e8e8e3; border-radius: 12px; padding: 3px; margin-bottom: 1.25rem; }
+    .tab { flex: 1; padding: 9px; font-size: 14px; font-weight: 500; border: none; cursor: pointer; background: transparent; color: #888; border-radius: 10px; transition: all 0.15s; position: relative; }
+    .tab.active { background: white; color: #1a1a1a; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .badge { position: absolute; top: 4px; right: 8px; background: #e24b4a; color: white; font-size: 10px; font-weight: 700; border-radius: 99px; padding: 1px 5px; min-width: 16px; text-align: center; }
+
+    .sync-indicator { font-size: 11px; color: #bbb; text-align: right; margin-bottom: 10px; }
+    .sync-indicator.syncing { color: #7f77dd; }
+    .sync-indicator.error { color: #e24b4a; }
+
+    .hint { font-size: 12px; color: #999; background: #f0f0eb; border-radius: 10px; padding: 10px 13px; margin-bottom: 1.25rem; line-height: 1.6; }
+
+    .cat-filter { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 1.25rem; scrollbar-width: none; }
+    .cat-filter::-webkit-scrollbar { display: none; }
+    .cat-pill { display: flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: 99px; border: 1px solid #e0e0d8; background: white; font-size: 12px; font-weight: 500; color: #666; cursor: pointer; white-space: nowrap; transition: all 0.15s; flex-shrink: 0; }
+    .cat-pill.active { background: #7f77dd; border-color: #7f77dd; color: white; }
+
+    .add-row { display: flex; gap: 8px; margin-bottom: 6px; }
+    .add-row input { flex: 1; padding: 10px 14px; border: 1px solid #e0e0d8; border-radius: 10px; font-size: 14px; background: white; outline: none; }
+    .add-row input:focus { border-color: #7f77dd; }
+    .cat-select { padding: 10px 12px; border: 1px solid #e0e0d8; border-radius: 10px; font-size: 13px; background: white; outline: none; color: #555; margin-bottom: 1.25rem; width: 100%; }
+
+    button.primary { background: #7f77dd; color: white; border: none; border-radius: 10px; padding: 10px 16px; font-size: 14px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+    button.primary:hover { background: #6b63c9; }
+
+    .starter-banner { background: #7f77dd; border-radius: 14px; padding: 16px; margin-bottom: 1.5rem; color: white; }
+    .starter-banner h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+    .starter-banner p { font-size: 12px; opacity: 0.85; margin-bottom: 12px; line-height: 1.5; }
+    .starter-btn { background: white; color: #7f77dd; border: none; border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+    .cat-group { margin-bottom: 1.25rem; }
+    .cat-group-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .cat-group-icon { font-size: 16px; }
+    .cat-group-name { font-size: 12px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: .06em; }
+    .cat-group-count { font-size: 11px; color: #ccc; margin-left: auto; }
+
+    .item-card { background: white; border: 1px solid #e8e8e3; border-radius: 12px; padding: 11px 13px; display: flex; align-items: center; gap: 10px; margin-bottom: 7px; transition: all 0.2s; }
+    .item-card.low { border-color: #f0b429; background: #fffcf0; }
+    .item-card.out { border-color: #e24b4a; background: #fff8f8; }
+    .item-emoji-wrap { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .bg-küche { background: #fff4e0; }
+    .bg-bad { background: #e8f4ff; }
+    .bg-putzen { background: #e8fff4; }
+    .bg-haushalt { background: #f4e8ff; }
+    .bg-sonstiges { background: #f0f0eb; }
+    .item-info { flex: 1; min-width: 0; }
+    .item-name { font-size: 14px; font-weight: 500; color: #1a1a1a; }
+    .item-status-text { font-size: 11px; margin-top: 2px; }
+    .item-status-text.low { color: #d4910a; }
+    .item-status-text.out { color: #a32d2d; }
+    .status-btns { display: flex; gap: 3px; }
+    .sbtn { border: 1px solid #e0e0d8; background: #f5f5f0; border-radius: 8px; padding: 5px 8px; font-size: 12px; cursor: pointer; color: #888; transition: all 0.15s; white-space: nowrap; }
+    .sbtn.ok { background: #e1f5ee; border-color: #1d9e75; color: #0f6e56; }
+    .sbtn.low { background: #fff4d6; border-color: #f0b429; color: #8a6200; }
+    .sbtn.out { background: #fcebeb; border-color: #e24b4a; color: #a32d2d; }
+    .del-btn { background: none; border: none; cursor: pointer; color: #ddd; font-size: 14px; padding: 4px; border-radius: 6px; flex-shrink: 0; }
+    .del-btn:hover { color: #e24b4a; background: #fff0f0; }
+
+    .shop-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+    .shop-count { font-size: 13px; color: #888; }
+    .clear-btn { font-size: 12px; color: #aaa; background: none; border: 1px solid #e0e0d8; border-radius: 8px; padding: 5px 10px; cursor: pointer; }
+    .shop-cat-group { margin-bottom: 1.25rem; }
+    .shop-cat-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: #bbb; text-transform: uppercase; letter-spacing: .06em; }
+    .shop-item { background: white; border: 1px solid #e8e8e3; border-radius: 12px; padding: 11px 13px; display: flex; align-items: center; gap: 10px; margin-bottom: 7px; transition: all 0.2s; }
+    .shop-item.bought { opacity: 0.38; }
+    .shop-check { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid #ccc; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; transition: all 0.15s; }
+    .shop-check.done { background: #1d9e75; border-color: #1d9e75; color: white; }
+    .shop-emoji { font-size: 18px; flex-shrink: 0; }
+    .shop-name { flex: 1; font-size: 14px; font-weight: 500; color: #1a1a1a; }
+    .shop-item.bought .shop-name { text-decoration: line-through; color: #bbb; }
+    .source-tag { font-size: 10px; padding: 2px 7px; border-radius: 99px; white-space: nowrap; font-weight: 500; }
+    .source-tag.vorrat { background: #fff4d6; color: #8a6200; }
+    .source-tag.manuell { background: #eeedfe; color: #534ab7; }
+    .manual-add { margin-top: 1.5rem; }
+    .manual-add-title { font-size: 12px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+    .manual-row { display: flex; gap: 8px; }
+    .manual-row input { flex: 1; padding: 10px 14px; border: 1px solid #e0e0d8; border-radius: 10px; font-size: 14px; background: white; outline: none; }
+    .empty { text-align: center; padding: 3rem 1rem; color: #ccc; font-size: 14px; line-height: 1.6; }
+    .empty-icon { font-size: 40px; margin-bottom: 10px; }
+
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: #3C3489; color: #EEEDFE; padding: 10px 20px; border-radius: 12px; font-size: 14px; font-weight: 500; transition: transform 0.3s ease; z-index: 999; white-space: nowrap; pointer-events: none; }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .members-bar { display: flex; align-items: center; gap: 6px; margin-bottom: 1.25rem; flex-wrap: wrap; }
+    .member-chip { display: flex; align-items: center; gap: 6px; background: white; border: 1px solid #e8e8e3; border-radius: 99px; padding: 4px 10px 4px 4px; }
+    .member-avatar { width: 24px; height: 24px; border-radius: 50%; background: #eeedfe; color: #534ab7; font-size: 11px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+    .member-email { font-size: 12px; color: #555; }
+    .member-you { font-size: 10px; color: #aaa; margin-left: 2px; }
+    .logout-full { background: none; border: 1px solid #e0e0d8; border-radius: 8px; padding: 6px 12px; font-size: 12px; color: #aaa; cursor: pointer; }
+    .logout-full:hover { background: #f5f5f0; color: #666; }
+    .frequently-section { margin-bottom: 1.25rem; }
+    .frequently-title { font-size: 12px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+    .frequently-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .freq-chip { display: inline-flex; align-items: center; gap: 5px; padding: 5px 8px 5px 12px; border-radius: 99px; border: 1px solid #e0e0d8; background: white; font-size: 13px; color: #555; transition: all 0.15s; }
+    .freq-chip:hover { border-color: #7f77dd; color: #7f77dd; background: #f5f4ff; }
+    .freq-chip-main { display: flex; align-items: center; gap: 5px; cursor: pointer; }
+    .freq-chip-emoji { font-size: 14px; }
+    .freq-chip-count { font-size: 10px; color: #aaa; background: #f0f0eb; border-radius: 99px; padding: 1px 6px; }
+    .freq-chip-del { background: none; border: none; cursor: pointer; color: #ccc; font-size: 13px; padding: 0 2px; border-radius: 4px; line-height: 1; margin-left: 2px; }
+    .freq-chip-del:hover { color: #e24b4a; }
+
+    /* AUFGABEN FORMULAR */
+    .aufgaben-form { background: white; border: 1px solid #e8e8e3; border-radius: 14px; padding: 1rem; margin-bottom: 1.25rem; }
+    .aufgaben-form-title { font-size: 12px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+    .aufgaben-form input, .aufgaben-form select, .aufgaben-form textarea { width: 100%; padding: 9px 12px; border: 1px solid #e0e0d8; border-radius: 10px; font-size: 14px; background: white; outline: none; font-family: inherit; }
+    .aufgaben-form input:focus, .aufgaben-form select:focus, .aufgaben-form textarea:focus { border-color: #7f77dd; }
+    .aufgaben-form textarea { resize: none; height: 60px; }
+    .form-row { display: flex; gap: 8px; margin-bottom: 8px; }
+    .form-row > * { flex: 1; }
+    .form-titel { margin-bottom: 8px; }
+    .mehr-toggle { background: none; border: none; color: #7f77dd; font-size: 13px; cursor: pointer; padding: 4px 0; margin-bottom: 8px; display: block; }
+    .mehr-felder { display: none; }
+    .mehr-felder.open { display: block; }
+
+    /* AUFGABEN KARTEN */
+    .aufgabe-card { background: white; border: 1px solid #e8e8e3; border-radius: 14px; padding: 13px; margin-bottom: 10px; }
+    .aufgabe-card.erledigt { opacity: 0.55; }
+    .aufgabe-card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .aufgabe-titel { font-size: 15px; font-weight: 600; color: #1a1a1a; flex: 1; }
+    .prio-badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; flex-shrink: 0; }
+    .prio-1 { background: #fcebeb; color: #a32d2d; }
+    .prio-2 { background: #fff4d6; color: #8a6200; }
+    .prio-3 { background: #e1f5ee; color: #0f6e56; }
+    .status-sel { border: none; font-size: 12px; font-weight: 500; cursor: pointer; padding: 3px 8px; border-radius: 6px; outline: none; flex-shrink: 0; }
+    .status-offen { background: #f0f0eb; color: #666; }
+    .status-in_arbeit { background: #eeedfe; color: #534ab7; }
+    .status-erledigt { background: #e1f5ee; color: #0f6e56; }
+    .aufg-del { background: none; border: none; cursor: pointer; color: #ddd; font-size: 16px; padding: 2px 4px; border-radius: 6px; flex-shrink: 0; }
+    .aufg-del:hover { color: #e24b4a; background: #fff0f0; }
+    .aufgabe-meta { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; color: #888; }
+    .aufgabe-meta span { display: flex; align-items: center; gap: 3px; }
+    .aufgabe-notiz { font-size: 13px; color: #666; margin-top: 8px; line-height: 1.4; }
+    .aufg-link { color: #7f77dd; text-decoration: none; font-size: 12px; display: inline-flex; align-items: center; gap: 3px; margin-top: 6px; }
+    .aufg-link:hover { text-decoration: underline; }
+    .aufg-edit { background: none; border: none; cursor: pointer; color: #ccc; font-size: 14px; padding: 2px 4px; border-radius: 6px; flex-shrink: 0; }
+    .aufg-edit:hover { color: #7f77dd; background: #f0f0ff; }
+
+    /* AUFGABEN EDIT-MODUS */
+    .aufgabe-card.editing input, .aufgabe-card.editing select, .aufgabe-card.editing textarea { width: 100%; padding: 8px 10px; border: 1px solid #e0e0d8; border-radius: 8px; font-size: 13px; background: white; outline: none; font-family: inherit; margin-bottom: 6px; box-sizing: border-box; }
+    .aufgabe-card.editing input:focus, .aufgabe-card.editing select:focus, .aufgabe-card.editing textarea:focus { border-color: #7f77dd; }
+    .aufgabe-card.editing textarea { resize: none; height: 56px; }
+    .edit-btns { display: flex; gap: 8px; margin-top: 2px; }
+    .cancel-btn { flex: 1; background: white; color: #888; border: 1px solid #e0e0d8; border-radius: 10px; padding: 10px; font-size: 14px; cursor: pointer; }
+    .cancel-btn:hover { background: #f5f5f0; }
+
+    /* SORT-LEISTE */
+    .sort-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; }
+    .sort-label { font-size: 12px; color: #aaa; white-space: nowrap; font-weight: 500; }
+  </style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="screen-loading">
+  <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-size:36px">🏠</div>
+</div>
+
+<!-- LOGIN -->
+<div id="screen-login" style="display:none">
+  <div class="login-wrap">
+    <div class="login-logo">🏠</div>
+    <h1 class="login-title">Unser Haushalt</h1>
+    <p class="login-sub">Gemeinsamer Vorratsschrank für Paare.<br>Kein Passwort nötig.</p>
+    <div class="login-card" id="login-form-wrap">
+      <label class="login-label">Deine E-Mail-Adresse</label>
+      <input type="email" class="login-input" id="login-email" placeholder="du@beispiel.de" />
+      <button class="login-btn" id="login-btn" onclick="sendMagicLink()">Magic Link senden ✨</button>
+      <p class="login-hint">Du bekommst einen Link per E-Mail.<br>Einfach draufklicken – fertig.</p>
+      <div style="display:flex;align-items:center;gap:8px;margin:16px 0">
+        <div style="flex:1;height:1px;background:#e0e0d8"></div>
+        <span style="font-size:12px;color:#aaa">oder</span>
+        <div style="flex:1;height:1px;background:#e0e0d8"></div>
+      </div>
+      <button onclick="signInWithGoogle()" style="width:100%;background:white;color:#555;border:1px solid #e0e0d8;border-radius:10px;padding:11px;font-size:14px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+        Mit Google anmelden
+      </button>
+    </div>
+    <div id="login-success" style="display:none" class="login-success">
+      <div class="login-success-icon">📬</div>
+      <p class="login-success-text">Link verschickt!<br>Schau in dein Postfach und klick auf den Link.</p>
+    </div>
+  </div>
+</div>
+
+<!-- HAUSHALT SETUP -->
+<div id="screen-setup" style="display:none">
+  <div class="setup-wrap">
+    <div class="login-logo">🏠</div>
+    <h2 class="setup-title">Haushalt einrichten</h2>
+    <p class="setup-sub">Erstelle einen neuen Haushalt oder tritt einem bestehenden bei.</p>
+
+    <div class="setup-card">
+      <div class="setup-card-title">Neuen Haushalt erstellen</div>
+      <div class="setup-card-sub">Du bekommst einen Code den du mit deiner Partnerin teilst.</div>
+      <button class="setup-btn" onclick="createHaushalt()">Haushalt erstellen</button>
+    </div>
+
+    <div class="setup-divider">oder</div>
+
+    <div class="setup-card">
+      <div class="setup-card-title">Bestehendem Haushalt beitreten</div>
+      <div class="setup-card-sub">Gib den Code deiner Partnerin ein.</div>
+      <input type="text" class="setup-input" id="join-code" placeholder="Z.B. ERIC-4729" maxlength="9" />
+      <button class="setup-btn" onclick="joinHaushalt()">Beitreten</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="screen-app" style="display:none">
+  <div class="app">
+    <div class="app-header">
+      <div>
+        <div class="app-title">🏠 Unser Haushalt</div>
+        <div class="app-subtitle" id="user-email-display"></div>
+      </div>
+      <div class="header-right">
+        <span class="code-badge" id="haushalt-code" onclick="copyCode()" title="Code kopieren"></span>
+        <button class="logout-full" onclick="logout()">Ausloggen</button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('vorrat')">Vorrat <span class="badge" id="badge-vorrat" style="display:none"></span></button>
+      <button class="tab" onclick="showTab('einkauf')">Einkauf <span class="badge" id="badge-einkauf" style="display:none"></span></button>
+      <button class="tab" onclick="showTab('aufgaben')">Aufgaben <span class="badge" id="badge-aufgaben" style="display:none"></span></button>
+    </div>
+
+    <div class="sync-indicator" id="sync-status">Verbinde...</div>
+
+    <div class="members-bar" id="members-bar"></div>
+
+    <div id="tab-vorrat">
+      <div id="starter-banner" style="display:none">
+        <div class="starter-banner">
+          <h3>🚀 Schnellstart</h3>
+          <p>Füge die 25 wichtigsten Haushaltsartikel mit einem Klick hinzu.</p>
+          <button class="starter-btn" onclick="addStarterItems()">25 Artikel hinzufügen</button>
+        </div>
+      </div>
+      <div class="hint">Tippe den Status an — "~" oder "✕" landen sofort auf eurer gemeinsamen Einkaufsliste.</div>
+      <div class="cat-filter" id="cat-filter"></div>
+      <div class="add-row">
+        <input type="text" id="vorrat-input" placeholder="Neuen Artikel hinzufügen..." />
+        <button class="primary" onclick="addVorrat()">+</button>
+      </div>
+      <select class="cat-select" id="vorrat-kat">
+        <option value="Küche">🍳 Küche</option>
+        <option value="Bad">🚿 Bad</option>
+        <option value="Putzen">🧹 Putzen</option>
+        <option value="Haushalt">🏠 Haushalt</option>
+        <option value="Sonstiges">📦 Sonstiges</option>
+      </select>
+      <div id="vorrat-list"></div>
+    </div>
+
+    <div id="tab-einkauf" style="display:none">
+      <div class="shop-header">
+        <span class="shop-count" id="shop-count">0 Artikel</span>
+        <button class="clear-btn" onclick="clearBought()">Gekaufte entfernen</button>
+      </div>
+      <div id="frequently-section" class="frequently-section" style="display:none">
+        <div class="frequently-title">Häufig gekauft</div>
+        <div class="frequently-chips" id="frequently-chips"></div>
+      </div>
+
+      <div id="shop-list"></div>
+      <div class="manual-add">
+        <div class="manual-add-title">Manuell hinzufügen</div>
+        <div class="manual-row">
+          <input type="text" id="shop-input" placeholder="z.B. Brot, Milch..." />
+          <button class="primary" onclick="addManual()">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-aufgaben" style="display:none">
+      <div class="aufgaben-form">
+        <div class="aufgaben-form-title">Neue Aufgabe</div>
+        <div class="form-titel">
+          <input type="text" id="aufgabe-titel" placeholder="Was muss erledigt werden?" />
+        </div>
+        <div class="form-row">
+          <select id="aufgabe-prio">
+            <option value="1">🔴 Hoch</option>
+            <option value="2" selected>🟡 Mittel</option>
+            <option value="3">🟢 Niedrig</option>
+          </select>
+          <input type="date" id="aufgabe-faellig" title="Fällig am" />
+        </div>
+        <button class="mehr-toggle" onclick="toggleMehr()">+ Mehr Details</button>
+        <div class="mehr-felder" id="mehr-felder">
+          <div class="form-row">
+            <input type="text" id="aufgabe-zugewiesen" placeholder="👤 Zugewiesen an" />
+            <input type="text" id="aufgabe-zeitaufwand" placeholder="⏱ Zeitaufwand" />
+          </div>
+          <div class="form-row">
+            <input type="number" id="aufgabe-kosten" placeholder="💰 Kosten in €" step="0.01" min="0" />
+            <input type="url" id="aufgabe-link" placeholder="🔗 Link (https://...)" />
+          </div>
+          <div style="margin-bottom:8px">
+            <textarea id="aufgabe-notizen" placeholder="📝 Notizen..."></textarea>
+          </div>
+        </div>
+        <button class="primary" style="width:100%" onclick="addAufgabe()">+ Hinzufügen</button>
+      </div>
+      <div class="sort-bar">
+        <span class="sort-label">Sortierung:</span>
+        <div class="cat-filter" style="margin:0;padding:0">
+          <button class="cat-pill active" id="sort-prioritaet" onclick="setAufgabenSort('prioritaet')">Priorität</button>
+          <button class="cat-pill" id="sort-faellig_am" onclick="setAufgabenSort('faellig_am')">Datum</button>
+          <button class="cat-pill" id="sort-kosten" onclick="setAufgabenSort('kosten')">Kosten</button>
+          <button class="cat-pill" id="sort-zeitaufwand" onclick="setAufgabenSort('zeitaufwand')">Zeitaufwand</button>
+        </div>
+      </div>
+      <div id="aufgaben-list"></div>
+      <div id="aufgaben-empty" class="empty" style="display:none">
+        <div class="empty-icon">✅</div>
+        Noch keine Aufgaben.<br>Füge oben eine neue hinzu.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const SUPABASE_URL = 'https://awvcltzpqxfnuwikbiyl.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF3dmNsdHpwcXhmbnV3aWtiaXlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1ODk3NzIsImV4cCI6MjA4OTE2NTc3Mn0.-UytAIHmnShsMP20Gzym9rlCMZaFA7ql0R61kn9HhkE';
+  const { createClient } = supabase;
+
+  // --- Session-Management ohne Web Locks ---
+  // Supabase's persistSession:true nutzt intern Web Locks API → hängt in Chrome.
+  // Lösung: persistSession:false + manuelles localStorage-Management.
+  // Der custom fetch injiziert das Token bei JEDEM API-Call direkt aus localStorage.
+
+  const STORAGE_KEY = 'hp-v4';
+
+  function getStoredSession() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch(e) { return null; }
+  }
+  function saveStoredSession(s) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch(e) {}
+  }
+  function clearStoredSession() {
+    try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+  }
+
+  const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
+    auth: {
+      persistSession: false,     // Kein Supabase-Storage → kein Web Locks
+      autoRefreshToken: false,   // Kein Auto-Refresh über Web Locks
+      detectSessionInUrl: true,  // Magic Link / OAuth Hash verarbeiten
+      flowType: 'implicit'
+    },
+    global: {
+      // Token bei jedem API-Call aus localStorage überschreiben.
+      // WICHTIG: Supabase setzt ohne aktive Session immer den Anon-Key als
+      // Authorization-Header — wir müssen ihn immer mit dem User-Token ersetzen.
+      fetch: async (url, init = {}) => {
+        const headers = new Headers(init?.headers);
+        const s = getStoredSession();
+        if (s?.access_token) headers.set('Authorization', `Bearer ${s.access_token}`);
+        return fetch(url, { ...init, headers });
+      }
+    }
+  });
+
+  const KATEGORIEN = {
+    'Küche':     { icon: '🍳', bg: 'bg-küche' },
+    'Bad':       { icon: '🚿', bg: 'bg-bad' },
+    'Putzen':    { icon: '🧹', bg: 'bg-putzen' },
+    'Haushalt':  { icon: '🏠', bg: 'bg-haushalt' },
+    'Sonstiges': { icon: '📦', bg: 'bg-sonstiges' },
+  };
+
+  const EMOJIS = {
+    'Waschmittel':'🧺','Spülmittel':'🍽️','Toilettenpapier':'🧻','Zahnpasta':'🪥',
+    'Shampoo':'🧴','Duschgel':'🚿','Küchenrolle':'🧻','Müllbeutel':'🗑️',
+    'Salz':'🧂','Pfeffer':'🌶️','Olivenöl':'🫙','Kaffee':'☕','Tee':'🍵',
+    'Milch':'🥛','Eier':'🥚','Butter':'🧈','Mehl':'🌾','Zucker':'🍬',
+    'Nudeln':'🍝','Reis':'🍚','Brot':'🍞','Käse':'🧀','Joghurt':'🥛',
+    'Seife':'🧼','Handseife':'🧼','Backpulver':'🥄','Essig':'🍶',
+    'Glasreiniger':'🪟','WC-Reiniger':'🚽','Schwamm':'🧽','Allesreiniger':'🧹',
+    'Deo':'💨','Rasierer':'🪒','Taschentücher':'🤧','Glühbirne':'💡','Batterien':'🔋',
+  };
+
+  const STARTER = [
+    { name: 'Toilettenpapier', kategorie: 'Bad' },
+    { name: 'Zahnpasta',       kategorie: 'Bad' },
+    { name: 'Shampoo',         kategorie: 'Bad' },
+    { name: 'Duschgel',        kategorie: 'Bad' },
+    { name: 'Handseife',       kategorie: 'Bad' },
+    { name: 'Deo',             kategorie: 'Bad' },
+    { name: 'Rasierer',        kategorie: 'Bad' },
+    { name: 'Taschentücher',   kategorie: 'Bad' },
+    { name: 'Waschmittel',     kategorie: 'Putzen' },
+    { name: 'Spülmittel',      kategorie: 'Putzen' },
+    { name: 'Allesreiniger',   kategorie: 'Putzen' },
+    { name: 'WC-Reiniger',     kategorie: 'Putzen' },
+    { name: 'Glasreiniger',    kategorie: 'Putzen' },
+    { name: 'Schwamm',         kategorie: 'Putzen' },
+    { name: 'Küchenrolle',     kategorie: 'Küche' },
+    { name: 'Olivenöl',        kategorie: 'Küche' },
+    { name: 'Salz',            kategorie: 'Küche' },
+    { name: 'Pfeffer',         kategorie: 'Küche' },
+    { name: 'Kaffee',          kategorie: 'Küche' },
+    { name: 'Zucker',          kategorie: 'Küche' },
+    { name: 'Mehl',            kategorie: 'Küche' },
+    { name: 'Backpulver',      kategorie: 'Küche' },
+    { name: 'Müllbeutel',      kategorie: 'Haushalt' },
+    { name: 'Glühbirne',       kategorie: 'Haushalt' },
+    { name: 'Batterien',       kategorie: 'Haushalt' },
+  ];
+
+  function getEmoji(name) {
+    for (const [k, v] of Object.entries(EMOJIS))
+      if (name.toLowerCase().includes(k.toLowerCase())) return v;
+    return '📦';
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  function generateCode() {
+    const words = ['HAUS','HOME','KÜCHE','TEAM','NEST','BASE','DUO','ZWEI'];
+    const word = words[Math.floor(Math.random() * words.length)];
+    const num = Math.floor(1000 + Math.random() * 9000);
+    return `${word}-${num}`;
+  }
+
+  let items = [];
+  let aufgaben = [];
+  let aufgabenSort = 'prioritaet';
+  let aufgabenEditId = null;
+  let activeFilter = 'Alle';
+  let currentUser = null;
+  let currentHaushalt = null;
+
+  function setSync(status, text) {
+    const el = document.getElementById('sync-status');
+    el.className = 'sync-indicator ' + status;
+    el.textContent = text;
+  }
+
+  function showScreen(screen) {
+    ['loading','login','setup','app'].forEach(s =>
+      document.getElementById('screen-' + s).style.display = s === screen ? 'block' : 'none'
+    );
+  }
+
+  async function signInWithGoogle() {
+    await db.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: 'https://haushaltspro.de' }
+    });
+  }
+
+  async function sendMagicLink() {
+    const email = document.getElementById('login-email').value.trim();
+    if (!email) return;
+    const btn = document.getElementById('login-btn');
+    btn.disabled = true; btn.textContent = 'Wird gesendet...';
+    const { error } = await db.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: 'https://haushaltspro.de' }
+    });
+    if (error) {
+      btn.disabled = false; btn.textContent = 'Magic Link senden ✨';
+      alert('Fehler: ' + error.message);
+    } else {
+      document.getElementById('login-form-wrap').style.display = 'none';
+      document.getElementById('login-success').style.display = 'block';
+    }
+  }
+
+  async function createHaushalt() {
+    const code = generateCode();
+    const { data, error } = await db.from('haushalte').insert({
+      code,
+      name: 'Unser Haushalt',
+      created_by: currentUser.id
+    }).select().single();
+    if (error) { alert('Fehler: ' + error.message); return; }
+    await db.from('haushalt_mitglieder').insert({ haushalt_id: data.id, user_id: currentUser.id, email: currentUser.email });
+    currentHaushalt = data;
+    startApp();
+  }
+
+  async function joinHaushalt() {
+    const code = document.getElementById('join-code').value.trim().toUpperCase();
+    if (!code) return;
+    const { data, error } = await db.from('haushalte').select('*').eq('code', code).single();
+    if (error || !data) { alert('Code nicht gefunden. Bitte prüfe den Code.'); return; }
+    await db.from('haushalt_mitglieder').insert({ haushalt_id: data.id, user_id: currentUser.id, email: currentUser.email });
+    currentHaushalt = data;
+    startApp();
+  }
+
+  async function copyCode() {
+    if (!currentHaushalt) return;
+    await navigator.clipboard.writeText(currentHaushalt.code);
+    showToast('Code kopiert: ' + currentHaushalt.code);
+  }
+
+  async function logout() {
+    clearStoredSession();
+    currentUser = null;
+    currentHaushalt = null;
+    showScreen('login');
+    db.auth.signOut().catch(() => {});
+  }
+
+  async function loadMembers() {
+    const { data } = await db
+      .from('haushalt_mitglieder')
+      .select('user_id, email')
+      .eq('haushalt_id', currentHaushalt.id);
+    if (!data) return;
+    const bar = document.getElementById('members-bar');
+    bar.innerHTML = data.map(m => {
+      const isMe = m.user_id === currentUser.id;
+      const initial = (m.email || '?')[0].toUpperCase();
+      const color = isMe ? '#eeedfe' : '#e1f5ee';
+      const textColor = isMe ? '#534ab7' : '#0f6e56';
+      const email = m.email ? m.email.split('@')[0] : 'Mitglied';
+      return `<div class="member-chip">
+        <div class="member-avatar" style="background:${color};color:${textColor}">${initial}</div>
+        <span class="member-email">${email}</span>
+        ${isMe ? '<span class="member-you">(du)</span>' : ''}
+      </div>`;
+    }).join('');
+  }
+
+  function startApp() {
+    document.getElementById('user-email-display').textContent = currentUser.email;
+    document.getElementById('haushalt-code').textContent = currentHaushalt.code;
+    showScreen('app');
+    loadItems();
+    loadMembers();
+    loadAufgaben();
+    subscribeRealtime();
+  }
+
+  async function loadItems() {
+    if (!currentHaushalt) return;
+    const { data, error } = await db.from('haushalt_items')
+      .select('*').eq('haushalt_id', currentHaushalt.id).order('created_at');
+    if (error) { setSync('error', 'Verbindungsfehler ✕'); return; }
+    items = data;
+    setSync('', 'Synchronisiert ✓');
+    render();
+  }
+
+  function subscribeRealtime() {
+    db.channel('haushalt-' + currentHaushalt.id)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'haushalt_items' }, () => loadItems())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'aufgaben' }, () => loadAufgaben())
+      .subscribe();
+  }
+
+  async function loadAufgaben() {
+    if (!currentHaushalt) return;
+    const { data, error } = await db.from('aufgaben')
+      .select('*').eq('haushalt_id', currentHaushalt.id).order('created_at');
+    if (error) return;
+    aufgaben = data;
+    renderAufgaben();
+    const offene = aufgaben.filter(a => a.status !== 'erledigt').length;
+    const badge = document.getElementById('badge-aufgaben');
+    badge.style.display = offene > 0 ? 'inline-block' : 'none';
+    badge.textContent = offene;
+  }
+
+  function toggleMehr() {
+    const el = document.getElementById('mehr-felder');
+    const btn = document.querySelector('.mehr-toggle');
+    el.classList.toggle('open');
+    btn.textContent = el.classList.contains('open') ? '− Weniger Details' : '+ Mehr Details';
+  }
+
+  async function addAufgabe() {
+    const titel = document.getElementById('aufgabe-titel').value.trim();
+    if (!titel) return;
+    const prio = parseInt(document.getElementById('aufgabe-prio').value);
+    const faellig = document.getElementById('aufgabe-faellig').value || null;
+    const zugewiesen = document.getElementById('aufgabe-zugewiesen').value.trim() || null;
+    const zeitaufwand = document.getElementById('aufgabe-zeitaufwand').value.trim() || null;
+    const kostenRaw = document.getElementById('aufgabe-kosten').value;
+    const kosten = kostenRaw ? parseFloat(kostenRaw) : null;
+    const link = document.getElementById('aufgabe-link').value.trim() || null;
+    const notizen = document.getElementById('aufgabe-notizen').value.trim() || null;
+    setSync('syncing', 'Speichert...');
+    await db.from('aufgaben').insert({
+      titel, prioritaet: prio, faellig_am: faellig,
+      zugewiesen_an: zugewiesen, zeitaufwand, kosten, link, notizen,
+      status: 'offen', haushalt_id: currentHaushalt.id,
+      erstellt_von: currentUser.id
+    });
+    ['aufgabe-titel','aufgabe-faellig','aufgabe-zugewiesen','aufgabe-zeitaufwand','aufgabe-kosten','aufgabe-link','aufgabe-notizen'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    await loadAufgaben();
+    setSync('', 'Synchronisiert ✓');
+  }
+
+  async function updateAufgabe(id, field, value) {
+    setSync('syncing', 'Speichert...');
+    await db.from('aufgaben').update({ [field]: value }).eq('id', id);
+    await loadAufgaben();
+    setSync('', 'Synchronisiert ✓');
+  }
+
+  async function delAufgabe(id) {
+    setSync('syncing', 'Löscht...');
+    await db.from('aufgaben').delete().eq('id', id);
+    await loadAufgaben();
+    setSync('', 'Synchronisiert ✓');
+  }
+
+  function esc(s) {
+    return (s || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function setAufgabenSort(sort) {
+    aufgabenSort = sort;
+    document.querySelectorAll('.sort-bar .cat-pill').forEach(el => el.classList.remove('active'));
+    const btn = document.getElementById('sort-' + sort);
+    if (btn) btn.classList.add('active');
+    renderAufgaben();
+  }
+
+  function editAufgabe(id) {
+    aufgabenEditId = id;
+    renderAufgaben();
+  }
+
+  function cancelEdit() {
+    aufgabenEditId = null;
+    renderAufgaben();
+  }
+
+  async function saveAufgabeEdit(id) {
+    const titel = document.getElementById('edit-titel').value.trim();
+    if (!titel) return;
+    const kostenRaw = document.getElementById('edit-kosten').value;
+    setSync('syncing', 'Speichert...');
+    await db.from('aufgaben').update({
+      titel,
+      prioritaet: parseInt(document.getElementById('edit-prio').value),
+      status: document.getElementById('edit-status').value,
+      faellig_am: document.getElementById('edit-faellig').value || null,
+      zugewiesen_an: document.getElementById('edit-zugewiesen').value.trim() || null,
+      zeitaufwand: document.getElementById('edit-zeitaufwand').value.trim() || null,
+      kosten: kostenRaw ? parseFloat(kostenRaw) : null,
+      link: document.getElementById('edit-link').value.trim() || null,
+      notizen: document.getElementById('edit-notizen').value.trim() || null,
+    }).eq('id', id);
+    aufgabenEditId = null;
+    await loadAufgaben();
+    setSync('', 'Synchronisiert ✓');
+  }
+
+  function renderAufgaben() {
+    const list = document.getElementById('aufgaben-list');
+    const empty = document.getElementById('aufgaben-empty');
+    if (!list) return;
+    if (!aufgaben.length) {
+      list.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+    const prioLabel = { 1: '🔴 Hoch', 2: '🟡 Mittel', 3: '🟢 Niedrig' };
+    const prioClass = { 1: 'prio-1', 2: 'prio-2', 3: 'prio-3' };
+
+    const sorted = [...aufgaben].sort((a, b) => {
+      if (aufgabenSort === 'prioritaet') return (a.prioritaet || 2) - (b.prioritaet || 2);
+      if (aufgabenSort === 'kosten') return (b.kosten || 0) - (a.kosten || 0);
+      if (aufgabenSort === 'zeitaufwand') return (a.zeitaufwand || '').localeCompare(b.zeitaufwand || '');
+      if (aufgabenSort === 'faellig_am') {
+        const da = a.faellig_am ? new Date(a.faellig_am) : new Date('9999-12-31');
+        const db2 = b.faellig_am ? new Date(b.faellig_am) : new Date('9999-12-31');
+        return da - db2;
+      }
+      return 0;
+    });
+
+    list.innerHTML = sorted.map(a => {
+      const p = a.prioritaet || 2;
+      const st = a.status || 'offen';
+
+      if (aufgabenEditId === a.id) {
+        return `<div class="aufgabe-card editing">
+          <input id="edit-titel" value="${esc(a.titel)}" placeholder="Titel" />
+          <div class="form-row">
+            <select id="edit-prio">
+              <option value="1" ${p===1?'selected':''}>🔴 Hoch</option>
+              <option value="2" ${p===2?'selected':''}>🟡 Mittel</option>
+              <option value="3" ${p===3?'selected':''}>🟢 Niedrig</option>
+            </select>
+            <select id="edit-status">
+              <option value="offen" ${st==='offen'?'selected':''}>Offen</option>
+              <option value="in_arbeit" ${st==='in_arbeit'?'selected':''}>In Arbeit</option>
+              <option value="erledigt" ${st==='erledigt'?'selected':''}>Erledigt ✓</option>
+            </select>
+            <input type="date" id="edit-faellig" value="${esc(a.faellig_am||'')}" />
+          </div>
+          <div class="form-row">
+            <input id="edit-zugewiesen" value="${esc(a.zugewiesen_an||'')}" placeholder="👤 Zugewiesen an" />
+            <input id="edit-zeitaufwand" value="${esc(a.zeitaufwand||'')}" placeholder="⏱ Zeitaufwand" />
+          </div>
+          <div class="form-row">
+            <input type="number" id="edit-kosten" value="${a.kosten!=null?a.kosten:''}" placeholder="💰 Kosten €" step="0.01" min="0" />
+            <input id="edit-link" value="${esc(a.link||'')}" placeholder="🔗 Link (https://...)" />
+          </div>
+          <textarea id="edit-notizen" placeholder="📝 Notizen...">${esc(a.notizen||'')}</textarea>
+          <div class="edit-btns">
+            <button class="primary" style="flex:1" onclick="saveAufgabeEdit('${a.id}')">Speichern</button>
+            <button class="cancel-btn" onclick="cancelEdit()">Abbrechen</button>
+          </div>
+        </div>`;
+      }
+
+      const faellig = a.faellig_am ? new Date(a.faellig_am).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit' }) : '';
+      const kosten = a.kosten != null ? parseFloat(a.kosten).toLocaleString('de-DE', { minimumFractionDigits: 2 }) + ' €' : '';
+      const meta = [
+        faellig ? `<span>📅 ${faellig}</span>` : '',
+        a.zugewiesen_an ? `<span>👤 ${esc(a.zugewiesen_an)}</span>` : '',
+        a.zeitaufwand ? `<span>⏱ ${esc(a.zeitaufwand)}</span>` : '',
+        kosten ? `<span>💰 ${kosten}</span>` : '',
+      ].filter(Boolean).join('');
+      return `<div class="aufgabe-card ${st === 'erledigt' ? 'erledigt' : ''}">
+        <div class="aufgabe-card-top">
+          <span class="prio-badge ${prioClass[p]}">${prioLabel[p]}</span>
+          <select class="status-sel status-${st}" onchange="updateAufgabe('${a.id}','status',this.value);this.className='status-sel status-'+this.value">
+            <option value="offen" ${st==='offen'?'selected':''}>Offen</option>
+            <option value="in_arbeit" ${st==='in_arbeit'?'selected':''}>In Arbeit</option>
+            <option value="erledigt" ${st==='erledigt'?'selected':''}>Erledigt ✓</option>
+          </select>
+          <button class="aufg-edit" onclick="editAufgabe('${a.id}')" title="Bearbeiten">✏️</button>
+          <button class="aufg-del" onclick="delAufgabe('${a.id}')">✕</button>
+        </div>
+        <div class="aufgabe-titel">${esc(a.titel)}</div>
+        ${meta ? `<div class="aufgabe-meta">${meta}</div>` : ''}
+        ${a.notizen ? `<div class="aufgabe-notiz">📝 ${esc(a.notizen)}</div>` : ''}
+        ${a.link ? `<a href="${esc(a.link)}" target="_blank" rel="noopener" class="aufg-link">🔗 Link öffnen</a>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  async function addStarterItems() {
+    document.getElementById('starter-banner').style.display = 'none';
+    setSync('syncing', 'Füge Artikel hinzu...');
+    const existing = items.filter(i => i.typ === 'vorrat').map(i => i.name.toLowerCase());
+    const toAdd = STARTER.filter(s => !existing.includes(s.name.toLowerCase()));
+    if (toAdd.length > 0) {
+      await db.from('haushalt_items').insert(
+        toAdd.map(s => ({ name: s.name, kategorie: s.kategorie, status: 'ok', typ: 'vorrat', source: 'vorrat', haushalt_id: currentHaushalt.id }))
+      );
+    }
+    await loadItems();
+  }
+
+  async function addVorrat() {
+    const inp = document.getElementById('vorrat-input');
+    const kat = document.getElementById('vorrat-kat');
+    const name = inp.value.trim(); if (!name) return;
+    inp.value = '';
+    setSync('syncing', 'Speichert...');
+    await db.from('haushalt_items').insert({ name, kategorie: kat.value, status: 'ok', typ: 'vorrat', source: 'vorrat', haushalt_id: currentHaushalt.id });
+    await loadItems();
+  }
+
+  async function setStatus(id, status) {
+    const item = items.find(i => i.id === id); if (!item) return;
+    const prev = item.status;
+    setSync('syncing', 'Speichert...');
+    await db.from('haushalt_items').update({ status }).eq('id', id);
+    if ((status === 'low' || status === 'out') && prev === 'ok') {
+      const already = items.find(i => i.typ === 'einkauf' && i.name === item.name && i.source === 'vorrat');
+      if (!already) await db.from('haushalt_items').insert({ name: item.name, kategorie: item.kategorie || 'Sonstiges', status: 'ok', typ: 'einkauf', source: 'vorrat', bought: false, haushalt_id: currentHaushalt.id });
+    }
+    if (status === 'ok' && (prev === 'low' || prev === 'out')) {
+      await db.from('haushalt_items').delete().match({ typ: 'einkauf', name: item.name, source: 'vorrat', haushalt_id: currentHaushalt.id });
+    }
+    await loadItems();
+  }
+
+  async function delItem(id) {
+    const item = items.find(i => i.id === id); if (!item) return;
+    setSync('syncing', 'Löscht...');
+    await db.from('haushalt_items').delete().eq('id', id);
+    if (item.typ === 'vorrat') await db.from('haushalt_items').delete().match({ typ: 'einkauf', name: item.name, source: 'vorrat', haushalt_id: currentHaushalt.id });
+    await loadItems();
+  }
+
+  async function toggleBought(id) {
+    const item = items.find(i => i.id === id); if (!item) return;
+    const bought = !item.bought;
+    setSync('syncing', 'Speichert...');
+    await db.from('haushalt_items').update({ bought }).eq('id', id);
+    if (bought) {
+      // buy_count auf dem Einkaufslisten-Item erhöhen (für manuell-Items)
+      await db.from('haushalt_items').update({ buy_count: (item.buy_count || 0) + 1 }).eq('id', id);
+      if (item.source === 'vorrat') {
+        // buy_count auch auf dem zugehörigen Vorrat-Item erhöhen — das ist die Quelle für "Häufig gekauft"
+        const vorratItem = items.find(i => i.typ === 'vorrat' && i.name.toLowerCase() === item.name.toLowerCase());
+        if (vorratItem) await db.from('haushalt_items').update({ buy_count: (vorratItem.buy_count || 0) + 1 }).eq('id', vorratItem.id);
+        await db.from('haushalt_items').update({ status: 'ok' }).eq('typ', 'vorrat').eq('name', item.name).eq('haushalt_id', currentHaushalt.id);
+      }
+    }
+    await loadItems();
+  }
+
+  async function clearBought() {
+    setSync('syncing', 'Speichert...');
+    const bought = items.filter(i => i.typ === 'einkauf' && i.bought);
+    for (const item of bought) {
+      if (item.source === 'manuell' && (item.buy_count || 0) > 0) {
+        // Gibt es schon einen unsichtbaren Zähler für diesen Namen?
+        const counter = items.find(i => i.status === 'counter' && i.name.toLowerCase() === item.name.toLowerCase() && i.id !== item.id);
+        if (counter) {
+          // buy_count addieren und dieses Item löschen
+          await db.from('haushalt_items').update({ buy_count: (counter.buy_count || 0) + (item.buy_count || 0) }).eq('id', counter.id);
+          await db.from('haushalt_items').delete().eq('id', item.id);
+        } else {
+          // Als unsichtbaren Zähler behalten (status='counter' → wird nicht angezeigt)
+          await db.from('haushalt_items').update({ bought: false, status: 'counter' }).eq('id', item.id);
+        }
+      } else {
+        await db.from('haushalt_items').delete().eq('id', item.id);
+      }
+    }
+    await loadItems();
+  }
+
+  async function addManual() {
+    const inp = document.getElementById('shop-input');
+    const name = inp.value.trim(); if (!name) return;
+    inp.value = '';
+    setSync('syncing', 'Speichert...');
+    // Gibt es einen unsichtbaren Zähler? Dann wiederverwenden statt neu anlegen
+    const counter = items.find(i => i.status === 'counter' && i.name.toLowerCase() === name.toLowerCase());
+    if (counter) {
+      await db.from('haushalt_items').update({ bought: false, status: 'ok' }).eq('id', counter.id);
+    } else {
+      await db.from('haushalt_items').insert({ name, kategorie: 'Sonstiges', status: 'ok', typ: 'einkauf', source: 'manuell', bought: false, haushalt_id: currentHaushalt.id });
+    }
+    await loadItems();
+  }
+
+  function renderFrequently() {
+    const onList = new Set(items.filter(i => i.typ === 'einkauf' && !i.bought && i.status !== 'counter').map(i => i.name.toLowerCase()));
+    // Vorrat-Items mit buy_count (durch Supabase korrekt getrackt)
+    const vorratItems = items.filter(i => i.typ === 'vorrat' && (i.buy_count || 0) > 0);
+    const vorratNamen = new Set(vorratItems.map(i => i.name.toLowerCase()));
+    // Manuell-Items die noch auf der Liste stehen und schon öfter gekauft wurden
+    const manuellItems = items.filter(i => i.typ === 'einkauf' && i.source === 'manuell' && (i.buy_count || 0) > 0 && !vorratNamen.has(i.name.toLowerCase()));
+    const top = [...vorratItems, ...manuellItems]
+      .sort((a, b) => (b.buy_count || 0) - (a.buy_count || 0))
+      .slice(0, 8);
+
+    const section = document.getElementById('frequently-section');
+    const chips = document.getElementById('frequently-chips');
+
+    if (!top.length) { section.style.display = 'none'; return; }
+    section.style.display = 'block';
+    chips.innerHTML = top.map(i => {
+      const alreadyOn = onList.has(i.name.toLowerCase());
+      const safeName = i.name.replace(/'/g, "\\'");
+      const safeKat = (i.kategorie || 'Sonstiges').replace(/'/g, "\\'");
+      return `<div class="freq-chip ${alreadyOn ? '' : ''}" style="${alreadyOn ? 'opacity:0.5' : ''}">
+        <span class="freq-chip-main" onclick="${alreadyOn ? '' : `addFromFrequently('${safeName}','${safeKat}')`}" style="${alreadyOn ? 'cursor:default' : ''}">
+          <span class="freq-chip-emoji">${getEmoji(i.name)}</span>
+          ${i.name}
+          <span class="freq-chip-count">${i.buy_count}×</span>
+        </span>
+        <button class="freq-chip-del" onclick="resetFreqItem('${i.id}','${i.typ}')" title="Aus Liste entfernen">×</button>
+      </div>`;
+    }).join('');
+  }
+
+  async function addFromFrequently(name, kategorie) {
+    setSync('syncing', 'Speichert...');
+    const vorratItem = items.find(i => i.typ === 'vorrat' && i.name.toLowerCase() === name.toLowerCase());
+    if (vorratItem) {
+      // Vorrats-Item → als source='vorrat' auf die Einkaufsliste (wie bei "~" / "✕")
+      const already = items.find(i => i.typ === 'einkauf' && i.source === 'vorrat' && i.name.toLowerCase() === name.toLowerCase());
+      if (!already) await db.from('haushalt_items').insert({ name: vorratItem.name, kategorie: vorratItem.kategorie || kategorie, status: 'ok', typ: 'einkauf', source: 'vorrat', bought: false, haushalt_id: currentHaushalt.id });
+    } else {
+      // Manuell-Counter → wiederverwenden oder neu anlegen
+      const counter = items.find(i => i.status === 'counter' && i.name.toLowerCase() === name.toLowerCase());
+      if (counter) {
+        await db.from('haushalt_items').update({ bought: false, status: 'ok' }).eq('id', counter.id);
+      } else {
+        await db.from('haushalt_items').insert({ name, kategorie, status: 'ok', typ: 'einkauf', source: 'manuell', bought: false, haushalt_id: currentHaushalt.id });
+      }
+    }
+    await loadItems();
+  }
+
+  async function resetFreqItem(id, typ) {
+    setSync('syncing', 'Löscht...');
+    if (typ === 'vorrat') {
+      await db.from('haushalt_items').update({ buy_count: 0 }).eq('id', id);
+    } else {
+      await db.from('haushalt_items').delete().eq('id', id);
+    }
+    await loadItems();
+  }
+
+  function setFilter(kat) { activeFilter = kat; render(); }
+
+  function showTab(t) {
+    document.getElementById('tab-vorrat').style.display = t === 'vorrat' ? 'block' : 'none';
+    document.getElementById('tab-einkauf').style.display = t === 'einkauf' ? 'block' : 'none';
+    document.getElementById('tab-aufgaben').style.display = t === 'aufgaben' ? 'block' : 'none';
+    document.querySelectorAll('.tab').forEach((el, i) =>
+      el.classList.toggle('active',
+        (t === 'vorrat' && i === 0) || (t === 'einkauf' && i === 1) || (t === 'aufgaben' && i === 2)
+      )
+    );
+    if (t === 'aufgaben') renderAufgaben();
+  }
+
+  function render() {
+    const vorrat = items.filter(i => i.typ === 'vorrat');
+    const einkauf = items.filter(i => i.typ === 'einkauf');
+    const needAttention = vorrat.filter(i => i.status !== 'ok').length;
+    const toBuy = einkauf.filter(i => !i.bought && i.status !== 'counter').length;
+
+    const bv = document.getElementById('badge-vorrat');
+    const be = document.getElementById('badge-einkauf');
+    bv.style.display = needAttention > 0 ? 'inline-block' : 'none'; bv.textContent = needAttention;
+    be.style.display = toBuy > 0 ? 'inline-block' : 'none'; be.textContent = toBuy;
+    document.getElementById('shop-count').textContent = toBuy + ' Artikel noch zu kaufen';
+    document.getElementById('starter-banner').style.display = vorrat.length === 0 ? 'block' : 'none';
+
+    const katsInUse = ['Alle', ...Object.keys(KATEGORIEN).filter(k => vorrat.some(i => (i.kategorie || 'Sonstiges') === k))];
+    document.getElementById('cat-filter').innerHTML = katsInUse.map(k => {
+      const icon = k === 'Alle' ? '✨' : KATEGORIEN[k]?.icon || '📦';
+      return `<button class="cat-pill ${activeFilter === k ? 'active' : ''}" onclick="setFilter('${k}')">${icon} ${k}</button>`;
+    }).join('');
+
+    const filtered = activeFilter === 'Alle' ? vorrat : vorrat.filter(i => (i.kategorie || 'Sonstiges') === activeFilter);
+    const byKat = {};
+    filtered.forEach(i => {
+      const k = i.kategorie || 'Sonstiges';
+      if (!byKat[k]) byKat[k] = { out: [], low: [], ok: [] };
+      byKat[k][i.status]?.push(i);
+    });
+
+    let vhtml = '';
+    if (!filtered.length) {
+      vhtml = '<div class="empty"><div class="empty-icon">📦</div>Keine Artikel in dieser Kategorie.</div>';
+    } else {
+      for (const [kat, groups] of Object.entries(byKat)) {
+        const all = [...groups.out, ...groups.low, ...groups.ok];
+        const ki = KATEGORIEN[kat] || { icon: '📦', bg: 'bg-sonstiges' };
+        vhtml += `<div class="cat-group"><div class="cat-group-header"><span class="cat-group-icon">${ki.icon}</span><span class="cat-group-name">${kat}</span><span class="cat-group-count">${all.length} Artikel</span></div>${all.map(i => itemCard(i, ki)).join('')}</div>`;
+      }
+    }
+    document.getElementById('vorrat-list').innerHTML = vhtml;
+
+    const toBuyItems = einkauf.filter(i => !i.bought && i.status !== 'counter');
+    const boughtItems = einkauf.filter(i => i.bought);
+    let ehtml = '';
+    if (!toBuyItems.length && !boughtItems.length) {
+      ehtml = '<div class="empty"><div class="empty-icon">🛒</div>Liste ist leer!<br>Setz mal einen Artikel auf "~" oder "✕".</div>';
+    } else {
+      const shopByKat = {};
+      [...toBuyItems, ...boughtItems].forEach(i => {
+        const k = i.kategorie || 'Sonstiges';
+        if (!shopByKat[k]) shopByKat[k] = [];
+        shopByKat[k].push(i);
+      });
+      for (const [kat, sitems] of Object.entries(shopByKat)) {
+        const ki = KATEGORIEN[kat] || { icon: '📦' };
+        ehtml += `<div class="shop-cat-group"><div class="shop-cat-header">${ki.icon} ${kat}</div>${sitems.map(shopItem).join('')}</div>`;
+      }
+    }
+    document.getElementById('shop-list').innerHTML = ehtml;
+    renderFrequently();
+  }
+
+  function itemCard(i, ki) {
+    const statusText = i.status === 'low' ? '~ Fast leer — auf Einkaufsliste' : i.status === 'out' ? '✕ Leer — auf Einkaufsliste' : '';
+    return `<div class="item-card ${i.status}"><div class="item-emoji-wrap ${ki.bg}">${getEmoji(i.name)}</div><div class="item-info"><div class="item-name">${i.name}</div>${statusText ? `<div class="item-status-text ${i.status}">${statusText}</div>` : ''}</div><div class="status-btns"><button class="sbtn ${i.status==='ok'?'ok':''}" onclick="setStatus('${i.id}','ok')">✓</button><button class="sbtn ${i.status==='low'?'low':''}" onclick="setStatus('${i.id}','low')">~</button><button class="sbtn ${i.status==='out'?'out':''}" onclick="setStatus('${i.id}','out')">✕</button></div><button class="del-btn" onclick="delItem('${i.id}')">✕</button></div>`;
+  }
+
+  function shopItem(i) {
+    return `<div class="shop-item ${i.bought?'bought':''}"><button class="shop-check ${i.bought?'done':''}" onclick="toggleBought('${i.id}')">${i.bought?'✓':''}</button><span class="shop-emoji">${getEmoji(i.name)}</span><span class="shop-name">${i.name}</span><span class="source-tag ${i.source}">${i.source==='vorrat'?'Vorrat':'Manuell'}</span></div>`;
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      if (document.activeElement.id === 'login-email') sendMagicLink();
+      if (document.activeElement.id === 'vorrat-input') addVorrat();
+      if (document.activeElement.id === 'shop-input') addManual();
+      if (document.activeElement.id === 'join-code') joinHaushalt();
+      if (document.activeElement.id === 'aufgabe-titel') addAufgabe();
+    }
+  });
+
+  // URL Error Handler
+  const hash = window.location.hash;
+  const hasError = hash.includes('error=');
+  if (hasError) {
+    window.location.hash = '';
+    showScreen('login');
+    setTimeout(() => {
+      document.getElementById('login-form-wrap').innerHTML = `
+        <div style="background:#fff4d6;border:1px solid #f0b429;border-radius:10px;padding:14px;margin-bottom:12px;font-size:13px;color:#8a6200;line-height:1.5">
+          Der Link ist abgelaufen. Bitte fordere einen neuen an.
+        </div>
+        <label class="login-label">Deine E-Mail-Adresse</label>
+        <input type="email" class="login-input" id="login-email" placeholder="du@beispiel.de" />
+        <button class="login-btn" id="login-btn" onclick="sendMagicLink()">Neuen Link senden ✨</button>
+        <p class="login-hint">Du bekommst einen neuen Link per E-Mail.</p>
+      `;
+    }, 100);
+  }
+
+  async function loadHaushaltAndStart() {
+    try {
+      const { data: mitglied } = await db
+        .from('haushalt_mitglieder')
+        .select('haushalt_id, haushalte(*)')
+        .eq('user_id', currentUser.id)
+        .single();
+      if (mitglied?.haushalte) {
+        currentHaushalt = mitglied.haushalte;
+        startApp();
+      } else {
+        showScreen('setup');
+      }
+    } catch(e) {
+      showScreen('login');
+    }
+  }
+
+  async function initAuth() {
+    // Session direkt aus localStorage lesen — kein Supabase-Auth-Call, kein Web Locks
+    const stored = getStoredSession();
+    if (!stored?.user?.id || !stored?.access_token) {
+      showScreen('login');
+      return;
+    }
+    // Abgelaufenes Token erkennen und löschen → Login erzwingen
+    const now = Math.floor(Date.now() / 1000);
+    if (stored.expires_at && stored.expires_at < now) {
+      clearStoredSession();
+      showScreen('login');
+      return;
+    }
+    currentUser = stored.user;
+    await loadHaushaltAndStart();
+  }
+
+  // Auth state changes: Session manuell in localStorage speichern
+  // (da persistSession:false Supabase das nicht mehr selbst macht)
+  db.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session?.user) {
+      saveStoredSession(session);
+      if (!currentUser) {
+        currentUser = session.user;
+        await loadHaushaltAndStart();
+      }
+    } else if (event === 'TOKEN_REFRESHED' && session) {
+      saveStoredSession(session);
+    } else if (event === 'SIGNED_OUT') {
+      clearStoredSession();
+      currentUser = null;
+      currentHaushalt = null;
+      showScreen('login');
+    }
+  });
+
+  if (!hasError) initAuth();
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      regs.forEach(reg => reg.unregister());
+    });
+  }
+</script>
+</body>
+</html>
