@@ -151,30 +151,39 @@
     .freq-chip-emoji { font-size: 14px; }
     .freq-chip-count { font-size: 10px; color: #aaa; background: #f0f0eb; border-radius: 99px; padding: 1px 6px; }
 
-    /* AUFGABEN */
-    .aufgaben-add { display: flex; gap: 8px; margin-bottom: 1.25rem; flex-wrap: wrap; }
-    .aufgaben-add input, .aufgaben-add select { padding: 10px 12px; border: 1px solid #e0e0d8; border-radius: 10px; font-size: 14px; background: white; outline: none; }
-    .aufgaben-add input:focus, .aufgaben-add select:focus { border-color: #7f77dd; }
-    .aufgaben-add .titel-inp { flex: 1; min-width: 180px; }
-    .aufgaben-table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid #e8e8e3; background: white; }
-    .aufgaben-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    .aufgaben-table th { background: #f5f5f0; padding: 10px 12px; text-align: left; font-size: 11px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; border-bottom: 1px solid #e8e8e3; }
-    .aufgaben-table td { padding: 10px 12px; border-bottom: 1px solid #f0f0eb; vertical-align: middle; white-space: nowrap; }
-    .aufgaben-table tr:last-child td { border-bottom: none; }
-    .aufgaben-table tr:hover td { background: #fafaf8; }
-    .prio-badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+    /* AUFGABEN FORMULAR */
+    .aufgaben-form { background: white; border: 1px solid #e8e8e3; border-radius: 14px; padding: 1rem; margin-bottom: 1.25rem; }
+    .aufgaben-form-title { font-size: 12px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+    .aufgaben-form input, .aufgaben-form select, .aufgaben-form textarea { width: 100%; padding: 9px 12px; border: 1px solid #e0e0d8; border-radius: 10px; font-size: 14px; background: white; outline: none; font-family: inherit; }
+    .aufgaben-form input:focus, .aufgaben-form select:focus, .aufgaben-form textarea:focus { border-color: #7f77dd; }
+    .aufgaben-form textarea { resize: none; height: 60px; }
+    .form-row { display: flex; gap: 8px; margin-bottom: 8px; }
+    .form-row > * { flex: 1; }
+    .form-titel { margin-bottom: 8px; }
+    .mehr-toggle { background: none; border: none; color: #7f77dd; font-size: 13px; cursor: pointer; padding: 4px 0; margin-bottom: 8px; display: block; }
+    .mehr-felder { display: none; }
+    .mehr-felder.open { display: block; }
+
+    /* AUFGABEN KARTEN */
+    .aufgabe-card { background: white; border: 1px solid #e8e8e3; border-radius: 14px; padding: 13px; margin-bottom: 10px; }
+    .aufgabe-card.erledigt { opacity: 0.55; }
+    .aufgabe-card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .aufgabe-titel { font-size: 15px; font-weight: 600; color: #1a1a1a; flex: 1; }
+    .prio-badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; flex-shrink: 0; }
     .prio-1 { background: #fcebeb; color: #a32d2d; }
     .prio-2 { background: #fff4d6; color: #8a6200; }
     .prio-3 { background: #e1f5ee; color: #0f6e56; }
-    .status-sel { border: none; background: transparent; font-size: 12px; font-weight: 500; cursor: pointer; padding: 3px 6px; border-radius: 6px; outline: none; }
+    .status-sel { border: none; font-size: 12px; font-weight: 500; cursor: pointer; padding: 3px 8px; border-radius: 6px; outline: none; flex-shrink: 0; }
     .status-offen { background: #f0f0eb; color: #666; }
     .status-in_arbeit { background: #eeedfe; color: #534ab7; }
     .status-erledigt { background: #e1f5ee; color: #0f6e56; }
-    .aufg-del { background: none; border: none; cursor: pointer; color: #ddd; font-size: 14px; padding: 4px; border-radius: 6px; }
+    .aufg-del { background: none; border: none; cursor: pointer; color: #ddd; font-size: 16px; padding: 2px 4px; border-radius: 6px; flex-shrink: 0; }
     .aufg-del:hover { color: #e24b4a; background: #fff0f0; }
-    .aufg-link { color: #7f77dd; text-decoration: none; font-size: 12px; }
+    .aufgabe-meta { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12px; color: #888; }
+    .aufgabe-meta span { display: flex; align-items: center; gap: 3px; }
+    .aufgabe-notiz { font-size: 13px; color: #666; margin-top: 8px; line-height: 1.4; }
+    .aufg-link { color: #7f77dd; text-decoration: none; font-size: 12px; display: inline-flex; align-items: center; gap: 3px; margin-top: 6px; }
     .aufg-link:hover { text-decoration: underline; }
-    .kosten-cell { color: #555; font-variant-numeric: tabular-nums; }
   </style>
 </head>
 <body>
@@ -305,35 +314,36 @@
     </div>
 
     <div id="tab-aufgaben" style="display:none">
-      <div class="aufgaben-add">
-        <input type="text" class="titel-inp" id="aufgabe-titel" placeholder="Neue Aufgabe..." />
-        <select id="aufgabe-prio">
-          <option value="1">🔴 Hoch</option>
-          <option value="2" selected>🟡 Mittel</option>
-          <option value="3">🟢 Niedrig</option>
-        </select>
-        <input type="date" id="aufgabe-faellig" />
-        <button class="primary" onclick="addAufgabe()">+ Hinzufügen</button>
+      <div class="aufgaben-form">
+        <div class="aufgaben-form-title">Neue Aufgabe</div>
+        <div class="form-titel">
+          <input type="text" id="aufgabe-titel" placeholder="Was muss erledigt werden?" />
+        </div>
+        <div class="form-row">
+          <select id="aufgabe-prio">
+            <option value="1">🔴 Hoch</option>
+            <option value="2" selected>🟡 Mittel</option>
+            <option value="3">🟢 Niedrig</option>
+          </select>
+          <input type="date" id="aufgabe-faellig" title="Fällig am" />
+        </div>
+        <button class="mehr-toggle" onclick="toggleMehr()">+ Mehr Details</button>
+        <div class="mehr-felder" id="mehr-felder">
+          <div class="form-row">
+            <input type="text" id="aufgabe-zugewiesen" placeholder="👤 Zugewiesen an" />
+            <input type="text" id="aufgabe-zeitaufwand" placeholder="⏱ Zeitaufwand" />
+          </div>
+          <div class="form-row">
+            <input type="number" id="aufgabe-kosten" placeholder="💰 Kosten in €" step="0.01" min="0" />
+            <input type="url" id="aufgabe-link" placeholder="🔗 Link (https://...)" />
+          </div>
+          <div style="margin-bottom:8px">
+            <textarea id="aufgabe-notizen" placeholder="📝 Notizen..."></textarea>
+          </div>
+        </div>
+        <button class="primary" style="width:100%" onclick="addAufgabe()">+ Hinzufügen</button>
       </div>
-      <div class="aufgaben-table-wrap">
-        <table class="aufgaben-table">
-          <thead>
-            <tr>
-              <th>Aufgabe</th>
-              <th>Priorität</th>
-              <th>Status</th>
-              <th>Zugewiesen</th>
-              <th>Fällig am</th>
-              <th>Zeitaufwand</th>
-              <th>Kosten</th>
-              <th>Link</th>
-              <th>Notizen</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="aufgaben-tbody"></tbody>
-        </table>
-      </div>
+      <div id="aufgaben-list"></div>
       <div id="aufgaben-empty" class="empty" style="display:none">
         <div class="empty-icon">✅</div>
         Noch keine Aufgaben.<br>Füge oben eine neue hinzu.
@@ -593,19 +603,35 @@
     badge.textContent = offene;
   }
 
+  function toggleMehr() {
+    const el = document.getElementById('mehr-felder');
+    const btn = document.querySelector('.mehr-toggle');
+    el.classList.toggle('open');
+    btn.textContent = el.classList.contains('open') ? '− Weniger Details' : '+ Mehr Details';
+  }
+
   async function addAufgabe() {
     const titel = document.getElementById('aufgabe-titel').value.trim();
     if (!titel) return;
     const prio = parseInt(document.getElementById('aufgabe-prio').value);
     const faellig = document.getElementById('aufgabe-faellig').value || null;
+    const zugewiesen = document.getElementById('aufgabe-zugewiesen').value.trim() || null;
+    const zeitaufwand = document.getElementById('aufgabe-zeitaufwand').value.trim() || null;
+    const kostenRaw = document.getElementById('aufgabe-kosten').value;
+    const kosten = kostenRaw ? parseFloat(kostenRaw) : null;
+    const link = document.getElementById('aufgabe-link').value.trim() || null;
+    const notizen = document.getElementById('aufgabe-notizen').value.trim() || null;
     setSync('syncing', 'Speichert...');
     await db.from('aufgaben').insert({
       titel, prioritaet: prio, faellig_am: faellig,
+      zugewiesen_an: zugewiesen, zeitaufwand, kosten, link, notizen,
       status: 'offen', haushalt_id: currentHaushalt.id,
       erstellt_von: currentUser.id
     });
-    document.getElementById('aufgabe-titel').value = '';
-    document.getElementById('aufgabe-faellig').value = '';
+    ['aufgabe-titel','aufgabe-faellig','aufgabe-zugewiesen','aufgabe-zeitaufwand','aufgabe-kosten','aufgabe-link','aufgabe-notizen'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
     await loadAufgaben();
     setSync('', 'Synchronisiert ✓');
   }
@@ -625,42 +651,43 @@
   }
 
   function renderAufgaben() {
-    const tbody = document.getElementById('aufgaben-tbody');
+    const list = document.getElementById('aufgaben-list');
     const empty = document.getElementById('aufgaben-empty');
-    if (!tbody) return;
+    if (!list) return;
     if (!aufgaben.length) {
-      tbody.innerHTML = '';
+      list.innerHTML = '';
       empty.style.display = 'block';
       return;
     }
     empty.style.display = 'none';
     const prioLabel = { 1: '🔴 Hoch', 2: '🟡 Mittel', 3: '🟢 Niedrig' };
     const prioClass = { 1: 'prio-1', 2: 'prio-2', 3: 'prio-3' };
-    const statusLabel = { offen: 'Offen', in_arbeit: 'In Arbeit', erledigt: 'Erledigt' };
-    tbody.innerHTML = aufgaben.map(a => {
+    list.innerHTML = aufgaben.map(a => {
       const p = a.prioritaet || 2;
       const st = a.status || 'offen';
-      const faellig = a.faellig_am ? new Date(a.faellig_am).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit', year:'numeric' }) : '—';
-      const kosten = a.kosten != null ? parseFloat(a.kosten).toLocaleString('de-DE', { minimumFractionDigits: 2 }) + ' €' : '—';
-      const link = a.link ? `<a href="${a.link}" target="_blank" rel="noopener" class="aufg-link">🔗 Link</a>` : '—';
-      return `<tr>
-        <td><strong>${a.titel}</strong></td>
-        <td><span class="prio-badge ${prioClass[p]}">${prioLabel[p]}</span></td>
-        <td>
+      const faellig = a.faellig_am ? new Date(a.faellig_am).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit' }) : '';
+      const kosten = a.kosten != null ? parseFloat(a.kosten).toLocaleString('de-DE', { minimumFractionDigits: 2 }) + ' €' : '';
+      const meta = [
+        faellig ? `<span>📅 ${faellig}</span>` : '',
+        a.zugewiesen_an ? `<span>👤 ${a.zugewiesen_an}</span>` : '',
+        a.zeitaufwand ? `<span>⏱ ${a.zeitaufwand}</span>` : '',
+        kosten ? `<span>💰 ${kosten}</span>` : '',
+      ].filter(Boolean).join('');
+      return `<div class="aufgabe-card ${st === 'erledigt' ? 'erledigt' : ''}">
+        <div class="aufgabe-card-top">
+          <span class="prio-badge ${prioClass[p]}">${prioLabel[p]}</span>
           <select class="status-sel status-${st}" onchange="updateAufgabe('${a.id}','status',this.value);this.className='status-sel status-'+this.value">
             <option value="offen" ${st==='offen'?'selected':''}>Offen</option>
             <option value="in_arbeit" ${st==='in_arbeit'?'selected':''}>In Arbeit</option>
-            <option value="erledigt" ${st==='erledigt'?'selected':''}>Erledigt</option>
+            <option value="erledigt" ${st==='erledigt'?'selected':''}>Erledigt ✓</option>
           </select>
-        </td>
-        <td>${a.zugewiesen_an || '—'}</td>
-        <td>${faellig}</td>
-        <td>${a.zeitaufwand || '—'}</td>
-        <td class="kosten-cell">${kosten}</td>
-        <td>${link}</td>
-        <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis">${a.notizen || '—'}</td>
-        <td><button class="aufg-del" onclick="delAufgabe('${a.id}')">✕</button></td>
-      </tr>`;
+          <button class="aufg-del" onclick="delAufgabe('${a.id}')">✕</button>
+        </div>
+        <div class="aufgabe-titel">${a.titel}</div>
+        ${meta ? `<div class="aufgabe-meta">${meta}</div>` : ''}
+        ${a.notizen ? `<div class="aufgabe-notiz">📝 ${a.notizen}</div>` : ''}
+        ${a.link ? `<a href="${a.link}" target="_blank" rel="noopener" class="aufg-link">🔗 Link öffnen</a>` : ''}
+      </div>`;
     }).join('');
   }
 
