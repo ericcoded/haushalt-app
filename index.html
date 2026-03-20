@@ -858,8 +858,14 @@
     setSync('syncing', 'Speichert...');
     await db.from('haushalt_items').update({ bought }).eq('id', id);
     if (bought) {
+      // buy_count auf dem Einkaufslisten-Item erhöhen (für manuell-Items)
       await db.from('haushalt_items').update({ buy_count: (item.buy_count || 0) + 1 }).eq('id', id);
-      if (item.source === 'vorrat') await db.from('haushalt_items').update({ status: 'ok' }).eq('typ', 'vorrat').eq('name', item.name).eq('haushalt_id', currentHaushalt.id);
+      if (item.source === 'vorrat') {
+        // buy_count auch auf dem zugehörigen Vorrat-Item erhöhen — das ist die Quelle für "Häufig gekauft"
+        const vorratItem = items.find(i => i.typ === 'vorrat' && i.name.toLowerCase() === item.name.toLowerCase());
+        if (vorratItem) await db.from('haushalt_items').update({ buy_count: (vorratItem.buy_count || 0) + 1 }).eq('id', vorratItem.id);
+        await db.from('haushalt_items').update({ status: 'ok' }).eq('typ', 'vorrat').eq('name', item.name).eq('haushalt_id', currentHaushalt.id);
+      }
     }
     await loadItems();
   }
@@ -881,9 +887,13 @@
   }
 
   function renderFrequently() {
-    const bought = items.filter(i => i.typ === 'einkauf' && (i.buy_count || 0) > 0);
     const onList = new Set(items.filter(i => i.typ === 'einkauf' && !i.bought).map(i => i.name.toLowerCase()));
-    const top = [...items.filter(i => i.typ === 'vorrat' && (i.buy_count || 0) > 0)]
+    // Vorrat-Items mit buy_count (durch Supabase korrekt getrackt)
+    const vorratItems = items.filter(i => i.typ === 'vorrat' && (i.buy_count || 0) > 0);
+    const vorratNamen = new Set(vorratItems.map(i => i.name.toLowerCase()));
+    // Manuell-Items die noch auf der Liste stehen und schon öfter gekauft wurden
+    const manuellItems = items.filter(i => i.typ === 'einkauf' && i.source === 'manuell' && (i.buy_count || 0) > 0 && !vorratNamen.has(i.name.toLowerCase()));
+    const top = [...vorratItems, ...manuellItems]
       .sort((a, b) => (b.buy_count || 0) - (a.buy_count || 0))
       .slice(0, 8);
 
