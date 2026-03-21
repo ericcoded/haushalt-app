@@ -132,7 +132,9 @@
     .manual-row { display: flex; gap: 8px; }
     .manual-row input { flex: 1; padding: 10px 14px; border: 1px solid #e0e0d8; border-radius: 10px; font-size: 14px; background: white; outline: none; }
     .manual-row input#shop-menge { flex: 0 0 70px; }
-    .shop-menge { font-size: 12px; color: #999; background: #f0f0eb; border-radius: 5px; padding: 1px 5px; margin-left: 2px; }
+    .shop-menge-input { width: 55px; font-size: 11px; border: 1px solid #e0e0d8; border-radius: 5px; padding: 2px 5px; text-align: center; background: #f0f0eb; color: #999; outline: none; flex-shrink: 0; }
+    .shop-menge-input:focus { border-color: #7f77dd; background: white; color: #333; }
+    .shop-menge-input::placeholder { color: #ccc; }
     .empty { text-align: center; padding: 3rem 1rem; color: #ccc; font-size: 14px; line-height: 1.6; }
     .empty-icon { font-size: 40px; margin-bottom: 10px; }
 
@@ -1003,7 +1005,7 @@
       // Manuell-Counter → wiederverwenden oder neu anlegen
       const counter = items.find(i => i.status === 'counter' && i.name.toLowerCase() === name.toLowerCase());
       if (counter) {
-        await db.from('haushalt_items').update({ bought: false, status: 'ok' }).eq('id', counter.id);
+        await db.from('haushalt_items').update({ bought: false, status: 'ok', menge: null }).eq('id', counter.id);
       } else {
         await db.from('haushalt_items').insert({ name, kategorie, status: 'ok', typ: 'einkauf', source: 'manuell', bought: false, haushalt_id: currentHaushalt.id });
       }
@@ -1100,6 +1102,14 @@
     return `<div class="item-card ${i.status}"><div class="item-emoji-wrap ${ki.bg}">${getEmoji(i.name)}</div><div class="item-info"><div class="item-name">${i.name}</div>${statusText ? `<div class="item-status-text ${i.status}">${statusText}</div>` : ''}</div><div class="status-btns"><button class="sbtn ${i.status==='ok'?'ok':''}" onclick="setStatus('${i.id}','ok')">✓</button><button class="sbtn ${i.status==='low'?'low':''}" onclick="setStatus('${i.id}','low')">~</button><button class="sbtn ${i.status==='out'?'out':''}" onclick="setStatus('${i.id}','out')">✕</button></div><button class="del-btn" onclick="delItem('${i.id}')">✕</button></div>`;
   }
 
+  async function updateMenge(id, val) {
+    const item = items.find(i => i.id === id); if (!item) return;
+    const menge = val.trim() || null;
+    if (menge === (item.menge || null)) return; // nichts geändert
+    await db.from('haushalt_items').update({ menge }).eq('id', id);
+    await loadItems();
+  }
+
   async function delShopItem(id) {
     const item = items.find(i => i.id === id); if (!item) return;
     setSync('syncing', 'Löscht...');
@@ -1118,8 +1128,9 @@
   }
 
   function shopItem(i) {
-    const mengeTag = i.menge ? `<span class="shop-menge">${i.menge}</span>` : '';
-    return `<div class="shop-item ${i.bought?'bought':''}"><button class="shop-check ${i.bought?'done':''}" onclick="toggleBought('${i.id}')">${i.bought?'✓':''}</button><span class="shop-emoji">${getEmoji(i.name)}</span><span class="shop-name">${i.name}${mengeTag}</span><span class="source-tag ${i.source}">${i.source==='vorrat'?'Vorrat':'Manuell'}</span><button class="del-btn" onclick="delShopItem('${i.id}')">✕</button></div>`;
+    const safeId = i.id;
+    const mengeVal = (i.menge || '').replace(/"/g, '&quot;');
+    return `<div class="shop-item ${i.bought?'bought':''}"><button class="shop-check ${i.bought?'done':''}" onclick="toggleBought('${safeId}')">${i.bought?'✓':''}</button><span class="shop-emoji">${getEmoji(i.name)}</span><span class="shop-name">${i.name}</span><input class="shop-menge-input" type="text" value="${mengeVal}" placeholder="Menge" onblur="updateMenge('${safeId}',this.value)" onkeydown="if(event.key==='Enter'){this.blur()}" /><span class="source-tag ${i.source}">${i.source==='vorrat'?'Vorrat':'Manuell'}</span><button class="del-btn" onclick="delShopItem('${safeId}')">✕</button></div>`;
   }
 
   document.addEventListener('keydown', e => {
