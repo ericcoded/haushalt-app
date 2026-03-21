@@ -972,7 +972,7 @@
     const manuellItems = items.filter(i => i.typ === 'einkauf' && i.source === 'manuell' && (i.buy_count || 0) > 0 && !vorratNamen.has(i.name.toLowerCase()));
     const top = [...vorratItems, ...manuellItems]
       .sort((a, b) => (b.buy_count || 0) - (a.buy_count || 0))
-      .slice(0, 8);
+      .slice(0, 15);
 
     const section = document.getElementById('frequently-section');
     const chips = document.getElementById('frequently-chips');
