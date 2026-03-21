@@ -131,6 +131,8 @@
     .manual-add-title { font-size: 12px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
     .manual-row { display: flex; gap: 8px; }
     .manual-row input { flex: 1; padding: 10px 14px; border: 1px solid #e0e0d8; border-radius: 10px; font-size: 14px; background: white; outline: none; }
+    .manual-row input#shop-menge { flex: 0 0 70px; }
+    .shop-menge { font-size: 12px; color: #999; background: #f0f0eb; border-radius: 5px; padding: 1px 5px; margin-left: 2px; }
     .empty { text-align: center; padding: 3rem 1rem; color: #ccc; font-size: 14px; line-height: 1.6; }
     .empty-icon { font-size: 40px; margin-bottom: 10px; }
 
@@ -319,6 +321,7 @@
         <div class="manual-add-title">Manuell hinzufügen</div>
         <div class="manual-row">
           <input type="text" id="shop-input" placeholder="z.B. Brot, Milch..." />
+          <input type="text" id="shop-menge" placeholder="Menge" />
           <button class="primary" onclick="addManual()">+</button>
         </div>
       </div>
@@ -425,14 +428,60 @@
   };
 
   const EMOJIS = {
+    // Reinigung & Bad
     'Waschmittel':'🧺','Spülmittel':'🍽️','Toilettenpapier':'🧻','Zahnpasta':'🪥',
     'Shampoo':'🧴','Duschgel':'🚿','Küchenrolle':'🧻','Müllbeutel':'🗑️',
-    'Salz':'🧂','Pfeffer':'🌶️','Olivenöl':'🫙','Kaffee':'☕','Tee':'🍵',
-    'Milch':'🥛','Eier':'🥚','Butter':'🧈','Mehl':'🌾','Zucker':'🍬',
-    'Nudeln':'🍝','Reis':'🍚','Brot':'🍞','Käse':'🧀','Joghurt':'🥛',
-    'Seife':'🧼','Handseife':'🧼','Backpulver':'🥄','Essig':'🍶',
-    'Glasreiniger':'🪟','WC-Reiniger':'🚽','Schwamm':'🧽','Allesreiniger':'🧹',
-    'Deo':'💨','Rasierer':'🪒','Taschentücher':'🤧','Glühbirne':'💡','Batterien':'🔋',
+    'Seife':'🧼','Handseife':'🧼','Glasreiniger':'🪟','WC-Reiniger':'🚽',
+    'Schwamm':'🧽','Allesreiniger':'🧹','Weichspüler':'🧺','Abflussreiniger':'🚽',
+    'Spültabs':'🍽️','Backofenreiniger':'🧹',
+    // Körperpflege
+    'Deo':'💨','Rasierer':'🪒','Taschentücher':'🤧','Feuchttücher':'🤧',
+    'Mundwasser':'🫧','Zahnbürste':'🪥','Lippenpflege':'💋','Creme':'🧴',
+    'Bodylotion':'🧴','Sonnencreme':'☀️','Kondome':'💊','Tampon':'🩸',
+    'Binde':'🩸','Watte':'🌸','Wattestäbchen':'🌸',
+    // Küche – Grundzutaten
+    'Salz':'🧂','Pfeffer':'🌶️','Olivenöl':'🫙','Öl':'🫙','Essig':'🍶',
+    'Kaffee':'☕','Tee':'🍵','Milch':'🥛','Sahne':'🥛','Hafermilch':'🥛',
+    'Eier':'🥚','Butter':'🧈','Mehl':'🌾','Zucker':'🍬','Honig':'🍯',
+    'Nudeln':'🍝','Reis':'🍚','Brot':'🍞','Brötchen':'🥐','Toast':'🍞',
+    'Käse':'🧀','Joghurt':'🥛','Quark':'🥛','Frischkäse':'🧀',
+    'Backpulver':'🥄','Hefe':'🥖','Maisstärke':'🌽','Paniermehl':'🍞',
+    'Tomatenmark':'🍅','Tomatensauce':'🍅','Kokosmilch':'🥥','Brühe':'🫕',
+    // Obst & Gemüse
+    'Apfel':'🍎','Äpfel':'🍎','Banane':'🍌','Bananen':'🍌',
+    'Orange':'🍊','Orangen':'🍊','Zitrone':'🍋','Zitronen':'🍋',
+    'Erdbeere':'🍓','Erdbeeren':'🍓','Weintraube':'🍇','Weintrauben':'🍇',
+    'Ananas':'🍍','Mango':'🥭','Avocado':'🥑','Avocados':'🥑',
+    'Birne':'🍐','Birnen':'🍐','Pfirsich':'🍑','Kirsche':'🍒',
+    'Wassermelone':'🍉','Melone':'🍈',
+    'Tomate':'🍅','Tomaten':'🍅','Kartoffel':'🥔','Kartoffeln':'🥔',
+    'Karotte':'🥕','Karotten':'🥕','Möhre':'🥕','Möhren':'🥕',
+    'Zwiebel':'🧅','Zwiebeln':'🧅','Knoblauch':'🧄','Paprika':'🫑',
+    'Gurke':'🥒','Gurken':'🥒','Zucchini':'🥒','Brokkoli':'🥦',
+    'Blumenkohl':'🥦','Spinat':'🥬','Salat':'🥬','Feldsalat':'🥬',
+    'Mais':'🌽','Pilze':'🍄','Champignons':'🍄','Ingwer':'🌱',
+    'Süßkartoffel':'🥔','Kürbis':'🎃','Aubergine':'🍆','Lauch':'🥬',
+    // Fleisch & Fisch
+    'Hackfleisch':'🥩','Rinderhack':'🥩','Schweinehack':'🥩',
+    'Hähnchen':'🍗','Hühnchen':'🍗','Rindfleisch':'🥩','Schweinefleisch':'🥩',
+    'Wurst':'🌭','Würstchen':'🌭','Salami':'🌭','Schinken':'🥩',
+    'Speck':'🥓','Lachs':'🐟','Thunfisch':'🐟','Fisch':'🐟','Garnelen':'🦐',
+    // Getränke
+    'Wasser':'💧','Mineralwasser':'💧','Bier':'🍺','Wein':'🍷','Sekt':'🥂',
+    'Saft':'🧃','Orangensaft':'🧃','Apfelsaft':'🧃','Cola':'🥤',
+    'Limonade':'🥤','Sprudel':'💧','Kaffeekapsel':'☕','Filterkaffee':'☕',
+    // Snacks & Süßes
+    'Schokolade':'🍫','Chips':'🥔','Kekse':'🍪','Müsli':'🥣',
+    'Cornflakes':'🥣','Haferflocken':'🥣','Nüsse':'🥜','Erdnüsse':'🥜',
+    'Popcorn':'🍿','Gummibärchen':'🍬','Marmelade':'🍓','Nutella':'🍫',
+    'Eis':'🍦','Tiefkühlpizza':'🍕','Pizza':'🍕',
+    // Haushalt
+    'Glühbirne':'💡','Batterien':'🔋','Kerzen':'🕯️','Feuerzeug':'🔥',
+    'Klebeband':'📦','Schrauben':'🔩','Putzeimer':'🪣','Besen':'🧹',
+    'Wischmopp':'🧹','Toilettenbürste':'🚽','Mülltüten':'🗑️',
+    // Tierbedarf
+    'Katzenfutter':'🐱','Hundefutter':'🐶','Vogelfutter':'🐦',
+    'Katzenstreu':'🐱','Hundeknochen':'🦴',
   };
 
   const STARTER = [
@@ -609,6 +658,8 @@
   }
 
   function subscribeRealtime() {
+    const token = getStoredSession()?.access_token;
+    if (token) db.realtime.setAuth(token);
     db.channel('haushalt-' + currentHaushalt.id)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'haushalt_items' }, () => loadItems())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'aufgaben' }, () => loadAufgaben())
@@ -894,15 +945,18 @@
 
   async function addManual() {
     const inp = document.getElementById('shop-input');
+    const mengeInp = document.getElementById('shop-menge');
     const name = inp.value.trim(); if (!name) return;
+    const menge = mengeInp.value.trim() || null;
     inp.value = '';
+    mengeInp.value = '';
     setSync('syncing', 'Speichert...');
     // Gibt es einen unsichtbaren Zähler? Dann wiederverwenden statt neu anlegen
     const counter = items.find(i => i.status === 'counter' && i.name.toLowerCase() === name.toLowerCase());
     if (counter) {
-      await db.from('haushalt_items').update({ bought: false, status: 'ok' }).eq('id', counter.id);
+      await db.from('haushalt_items').update({ bought: false, status: 'ok', menge }).eq('id', counter.id);
     } else {
-      await db.from('haushalt_items').insert({ name, kategorie: 'Sonstiges', status: 'ok', typ: 'einkauf', source: 'manuell', bought: false, haushalt_id: currentHaushalt.id });
+      await db.from('haushalt_items').insert({ name, menge, kategorie: 'Sonstiges', status: 'ok', typ: 'einkauf', source: 'manuell', bought: false, haushalt_id: currentHaushalt.id });
     }
     await loadItems();
   }
@@ -1046,8 +1100,26 @@
     return `<div class="item-card ${i.status}"><div class="item-emoji-wrap ${ki.bg}">${getEmoji(i.name)}</div><div class="item-info"><div class="item-name">${i.name}</div>${statusText ? `<div class="item-status-text ${i.status}">${statusText}</div>` : ''}</div><div class="status-btns"><button class="sbtn ${i.status==='ok'?'ok':''}" onclick="setStatus('${i.id}','ok')">✓</button><button class="sbtn ${i.status==='low'?'low':''}" onclick="setStatus('${i.id}','low')">~</button><button class="sbtn ${i.status==='out'?'out':''}" onclick="setStatus('${i.id}','out')">✕</button></div><button class="del-btn" onclick="delItem('${i.id}')">✕</button></div>`;
   }
 
+  async function delShopItem(id) {
+    const item = items.find(i => i.id === id); if (!item) return;
+    setSync('syncing', 'Löscht...');
+    if (item.source === 'manuell' && (item.buy_count || 0) > 0) {
+      const counter = items.find(i => i.status === 'counter' && i.name.toLowerCase() === item.name.toLowerCase() && i.id !== id);
+      if (counter) {
+        await db.from('haushalt_items').update({ buy_count: (counter.buy_count || 0) + (item.buy_count || 0) }).eq('id', counter.id);
+        await db.from('haushalt_items').delete().eq('id', id);
+      } else {
+        await db.from('haushalt_items').update({ status: 'counter', bought: false }).eq('id', id);
+      }
+    } else {
+      await db.from('haushalt_items').delete().eq('id', id);
+    }
+    await loadItems();
+  }
+
   function shopItem(i) {
-    return `<div class="shop-item ${i.bought?'bought':''}"><button class="shop-check ${i.bought?'done':''}" onclick="toggleBought('${i.id}')">${i.bought?'✓':''}</button><span class="shop-emoji">${getEmoji(i.name)}</span><span class="shop-name">${i.name}</span><span class="source-tag ${i.source}">${i.source==='vorrat'?'Vorrat':'Manuell'}</span></div>`;
+    const mengeTag = i.menge ? `<span class="shop-menge">${i.menge}</span>` : '';
+    return `<div class="shop-item ${i.bought?'bought':''}"><button class="shop-check ${i.bought?'done':''}" onclick="toggleBought('${i.id}')">${i.bought?'✓':''}</button><span class="shop-emoji">${getEmoji(i.name)}</span><span class="shop-name">${i.name}${mengeTag}</span><span class="source-tag ${i.source}">${i.source==='vorrat'?'Vorrat':'Manuell'}</span><button class="del-btn" onclick="delShopItem('${i.id}')">✕</button></div>`;
   }
 
   document.addEventListener('keydown', e => {
