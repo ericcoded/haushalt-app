@@ -723,7 +723,9 @@
       .select('user_id, email')
       .eq('haushalt_id', currentHaushalt.id);
     if (!data) return;
-    members = data;
+    members = data.map(m =>
+      m.user_id === currentUser.id && !m.email ? { ...m, email: currentUser.email } : m
+    );
     populateMemberSelects();
     const bar = document.getElementById('members-bar');
     bar.innerHTML = data.map(m => {
