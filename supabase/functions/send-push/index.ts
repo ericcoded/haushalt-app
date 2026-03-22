@@ -12,7 +12,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 // @ts-ignore
-import webpush from 'https://esm.sh/web-push@3.6.7';
+import webpush from 'npm:web-push@3.6.7';
 
 Deno.serve(async () => {
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
