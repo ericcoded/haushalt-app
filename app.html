@@ -617,6 +617,7 @@
   let routineFormOpen = false;
   let routineEditId = null;
   let editingRoutineTage = new Set();
+  let pushSubscribed = false;
   let aufgabenSort = 'prioritaet';
   let aufgabenEditId = null;
   let activeFilter = 'Alle';
@@ -771,6 +772,8 @@
     document.getElementById('user-email-display').textContent = currentUser.email;
     document.getElementById('haushalt-code').textContent = currentHaushalt.code;
     showScreen('app');
+    const savedTab = localStorage.getItem('hp-tab');
+    showTab(['vorrat','einkauf','aufgaben'].includes(savedTab) ? savedTab : 'vorrat');
     loadItems();
     loadMembers();
     loadAufgaben();
@@ -1166,6 +1169,7 @@
       )
     );
     if (t === 'aufgaben') renderAufgaben();
+    localStorage.setItem('hp-tab', t);
   }
 
   function render() {
@@ -1451,9 +1455,8 @@
     if (!banner) return;
     const supported = 'serviceWorker' in navigator && 'PushManager' in window && VAPID_PUBLIC_KEY !== 'HIER_VAPID_PUBLIC_KEY_EINTRAGEN';
     const needed = routinen.length > 0;
-    const granted = Notification.permission === 'granted';
-    banner.style.display   = (supported && needed && !granted) ? 'flex' : 'none';
-    if (activeBar) activeBar.style.display = (supported && granted) ? 'block' : 'none';
+    banner.style.display   = (supported && needed && !pushSubscribed) ? 'flex' : 'none';
+    if (activeBar) activeBar.style.display = (supported && pushSubscribed) ? 'block' : 'none';
   }
 
   async function unsubscribePush() {
@@ -1465,6 +1468,7 @@
         await db.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
         await sub.unsubscribe();
       }
+      pushSubscribed = false;
       showToast('Benachrichtigungen deaktiviert');
       updatePushBanner();
     } catch(e) {
@@ -1477,14 +1481,17 @@
     if (VAPID_PUBLIC_KEY === 'HIER_VAPID_PUBLIC_KEY_EINTRAGEN') return;
     const reg = await navigator.serviceWorker.register('/sw.js');
     if (Notification.permission === 'granted') {
-      // Immer die aktuelle Subscription in DB schreiben (schützt gegen Überschreiben durch anderes Gerät)
       let sub = await reg.pushManager.getSubscription();
       if (!sub) sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       }).catch(() => null);
-      if (sub) await subscribePush(sub);
+      if (sub) {
+        await subscribePush(sub);
+        pushSubscribed = true;
+      }
     }
+    updatePushBanner();
   }
 
   async function requestPush() {
@@ -1496,6 +1503,7 @@
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
     });
     await subscribePush(sub);
+    pushSubscribed = true;
     updatePushBanner();
     showToast('Benachrichtigungen aktiviert ✓');
   }
