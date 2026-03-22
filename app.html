@@ -216,6 +216,8 @@
     .routine-form { background: white; border: 1px solid #e8e8e3; border-radius: 14px; padding: 1rem; margin-bottom: 10px; }
     .routine-form input, .routine-form select { width: 100%; padding: 9px 12px; border: 1px solid #e0e0d8; border-radius: 10px; font-size: 14px; background: white; outline: none; font-family: inherit; }
     .routine-form input:focus, .routine-form select:focus { border-color: #7f77dd; }
+    .routine-card.editing input, .routine-card.editing select { width: 100%; padding: 8px 10px; border: 1px solid #e0e0d8; border-radius: 8px; font-size: 13px; background: white; outline: none; font-family: inherit; box-sizing: border-box; }
+    .routine-card.editing input:focus, .routine-card.editing select:focus { border-color: #7f77dd; }
     .tag-picker { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
     .tag-btn { padding: 5px 10px; border-radius: 99px; border: 1px solid #e0e0d8; background: white; color: #888; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
     .tag-btn.active { background: #7f77dd; border-color: #7f77dd; color: white; }
@@ -610,6 +612,8 @@
   let members = [];
   let selectedRoutineTage = new Set();
   let routineFormOpen = false;
+  let routineEditId = null;
+  let editingRoutineTage = new Set();
   let aufgabenSort = 'prioritaet';
   let aufgabenEditId = null;
   let activeFilter = 'Alle';
@@ -1335,10 +1339,48 @@
     setSync('', 'Synchronisiert ✓');
   }
 
+  function editRoutine(id) {
+    const r = routinen.find(r => r.id === id);
+    if (!r) return;
+    routineEditId = id;
+    editingRoutineTage = new Set(r.wiederholung_tage || []);
+    renderRoutinen();
+  }
+
+  function cancelRoutineEdit() {
+    routineEditId = null;
+    editingRoutineTage.clear();
+    renderRoutinen();
+  }
+
+  function toggleEditTag(displayIdx) {
+    const jsDay = WOCHENTAGE_JSDAY[displayIdx];
+    if (editingRoutineTage.has(jsDay)) editingRoutineTage.delete(jsDay);
+    else editingRoutineTage.add(jsDay);
+    renderRoutinen();
+  }
+
+  async function saveRoutineEdit(id) {
+    const titel = document.getElementById('redit-titel').value.trim();
+    if (!titel) return;
+    if (editingRoutineTage.size === 0) { showToast('Bitte mindestens einen Wochentag wählen'); return; }
+    setSync('syncing', 'Speichert...');
+    await db.from('routinen').update({
+      titel,
+      zugewiesen_an: document.getElementById('redit-zugewiesen').value || null,
+      uhrzeit: document.getElementById('redit-uhrzeit').value || '08:00',
+      wiederholung_tage: [...editingRoutineTage],
+    }).eq('id', id);
+    routineEditId = null;
+    editingRoutineTage.clear();
+    await loadRoutinen();
+    setSync('', 'Synchronisiert ✓');
+  }
+
   function renderRoutinen() {
     const list = document.getElementById('routinen-list');
     if (!list) return;
-    const todayIdx = new Date().getDay(); // 0=So … 6=Sa
+    const todayIdx = new Date().getDay();
     const done = getRoutineDoneToday();
 
     if (!routinen.length) {
@@ -1347,6 +1389,28 @@
     }
     list.innerHTML = routinen.map(r => {
       const tage = r.wiederholung_tage || [];
+
+      // Edit-Modus
+      if (routineEditId === r.id) {
+        const editDayPicker = WOCHENTAGE.map((tag, displayIdx) => {
+          const jsDay = WOCHENTAGE_JSDAY[displayIdx];
+          return `<button type="button" class="tag-btn ${editingRoutineTage.has(jsDay) ? 'active' : ''}" onclick="toggleEditTag(${displayIdx})">${tag}</button>`;
+        }).join('');
+        return `<div class="routine-card editing">
+          <input id="redit-titel" value="${esc(r.titel)}" placeholder="Titel" style="margin-bottom:6px" />
+          <div class="form-row" style="margin-bottom:6px">
+            <select id="redit-zugewiesen">${memberOptionsHtml(r.zugewiesen_an||'')}</select>
+            <input type="time" id="redit-uhrzeit" value="${esc(r.uhrzeit?.slice(0,5)||'08:00')}" />
+          </div>
+          <div style="font-size:12px;color:#aaa;font-weight:500;margin-bottom:6px">Wochentage</div>
+          <div class="tag-picker" style="margin-bottom:10px">${editDayPicker}</div>
+          <div class="edit-btns">
+            <button class="primary" style="flex:1" onclick="saveRoutineEdit('${r.id}')">Speichern</button>
+            <button class="cancel-btn" onclick="cancelRoutineEdit()">Abbrechen</button>
+          </div>
+        </div>`;
+      }
+
       const istHeute = tage.includes(todayIdx);
       const isDone = done.has(r.id);
       const uhrzeit = r.uhrzeit ? r.uhrzeit.slice(0, 5) + ' Uhr' : '';
@@ -1364,6 +1428,7 @@
         <div class="routine-card-top">
           ${checkBtn}
           <span class="routine-titel">${esc(r.titel)}</span>
+          <button class="aufg-edit" onclick="editRoutine('${r.id}')" title="Bearbeiten">✏️</button>
           <button class="aufg-del" onclick="delRoutine('${r.id}')">✕</button>
         </div>
         <div class="routine-meta">
