@@ -213,8 +213,8 @@
     .routine-add-btn { background: none; border: 1px solid #e0e0d8; border-radius: 8px; padding: 5px 10px; font-size: 12px; color: #7f77dd; cursor: pointer; }
     .routine-add-btn:hover { background: #f5f4ff; }
     .routine-form { background: white; border: 1px solid #e8e8e3; border-radius: 14px; padding: 1rem; margin-bottom: 10px; }
-    .routine-form input { width: 100%; padding: 9px 12px; border: 1px solid #e0e0d8; border-radius: 10px; font-size: 14px; background: white; outline: none; font-family: inherit; }
-    .routine-form input:focus { border-color: #7f77dd; }
+    .routine-form input, .routine-form select { width: 100%; padding: 9px 12px; border: 1px solid #e0e0d8; border-radius: 10px; font-size: 14px; background: white; outline: none; font-family: inherit; }
+    .routine-form input:focus, .routine-form select:focus { border-color: #7f77dd; }
     .tag-picker { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
     .tag-btn { padding: 5px 10px; border-radius: 99px; border: 1px solid #e0e0d8; background: white; color: #888; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
     .tag-btn.active { background: #7f77dd; border-color: #7f77dd; color: white; }
@@ -384,7 +384,7 @@
             <input type="text" id="routine-titel" placeholder="z.B. Müll rausbringen" />
           </div>
           <div class="form-row" style="margin-bottom:8px">
-            <input type="text" id="routine-zugewiesen" placeholder="👤 Zugewiesen an" />
+            <select id="routine-zugewiesen"><option value="">👤 Niemand</option></select>
             <input type="time" id="routine-uhrzeit" value="08:00" />
           </div>
           <div style="font-size:12px;color:#aaa;font-weight:500;margin-bottom:6px">Wochentage</div>
@@ -413,7 +413,7 @@
         <button class="mehr-toggle" onclick="toggleMehr()">+ Mehr Details</button>
         <div class="mehr-felder" id="mehr-felder">
           <div class="form-row">
-            <input type="text" id="aufgabe-zugewiesen" placeholder="👤 Zugewiesen an" />
+            <select id="aufgabe-zugewiesen"><option value="">👤 Niemand</option></select>
             <input type="text" id="aufgabe-zeitaufwand" placeholder="⏱ Zeitaufwand" />
           </div>
           <div class="form-row">
@@ -606,6 +606,7 @@
   let items = [];
   let aufgaben = [];
   let routinen = [];
+  let members = [];
   let selectedRoutineTage = new Set();
   let routineFormOpen = false;
   let aufgabenSort = 'prioritaet';
@@ -614,7 +615,9 @@
   let currentUser = null;
   let currentHaushalt = null;
 
-  const WOCHENTAGE = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+  // Woche startet Montag. WOCHENTAGE_JSDAY[i] = JS-getDay()-Wert für Anzeige-Index i
+  const WOCHENTAGE      = ['Mo','Di','Mi','Do','Fr','Sa','So'];
+  const WOCHENTAGE_JSDAY = [1,   2,   3,   4,   5,   6,   0];
 
   function setSync(status, text) {
     const el = document.getElementById('sync-status');
@@ -693,12 +696,35 @@
     db.auth.signOut().catch(() => {});
   }
 
+  function memberName(m) {
+    return m.email ? m.email.split('@')[0] : 'Mitglied';
+  }
+
+  function memberOptionsHtml(currentValue) {
+    return `<option value="">– Niemand –</option>` +
+      members.map(m => {
+        const name = memberName(m);
+        return `<option value="${name}" ${currentValue === name ? 'selected' : ''}>${name}</option>`;
+      }).join('');
+  }
+
+  function populateMemberSelects() {
+    ['aufgabe-zugewiesen', 'routine-zugewiesen'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el || el.tagName !== 'SELECT') return;
+      const current = el.value;
+      el.innerHTML = memberOptionsHtml(current);
+    });
+  }
+
   async function loadMembers() {
     const { data } = await db
       .from('haushalt_mitglieder')
       .select('user_id, email')
       .eq('haushalt_id', currentHaushalt.id);
     if (!data) return;
+    members = data;
+    populateMemberSelects();
     const bar = document.getElementById('members-bar');
     bar.innerHTML = data.map(m => {
       const isMe = m.user_id === currentUser.id;
@@ -895,7 +921,7 @@
             <input type="date" id="edit-faellig" value="${esc(a.faellig_am||'')}" />
           </div>
           <div class="form-row">
-            <input id="edit-zugewiesen" value="${esc(a.zugewiesen_an||'')}" placeholder="👤 Zugewiesen an" />
+            <select id="edit-zugewiesen">${memberOptionsHtml(a.zugewiesen_an||'')}</select>
             <input id="edit-zeitaufwand" value="${esc(a.zeitaufwand||'')}" placeholder="⏱ Zeitaufwand" />
           </div>
           <div class="form-row">
@@ -1237,14 +1263,16 @@
   function renderTagPicker() {
     const el = document.getElementById('tag-picker');
     if (!el) return;
-    el.innerHTML = WOCHENTAGE.map((tag, i) =>
-      `<button type="button" class="tag-btn ${selectedRoutineTage.has(i) ? 'active' : ''}" onclick="toggleTag(${i})">${tag}</button>`
-    ).join('');
+    el.innerHTML = WOCHENTAGE.map((tag, displayIdx) => {
+      const jsDay = WOCHENTAGE_JSDAY[displayIdx];
+      return `<button type="button" class="tag-btn ${selectedRoutineTage.has(jsDay) ? 'active' : ''}" onclick="toggleTag(${displayIdx})">${tag}</button>`;
+    }).join('');
   }
 
-  function toggleTag(i) {
-    if (selectedRoutineTage.has(i)) selectedRoutineTage.delete(i);
-    else selectedRoutineTage.add(i);
+  function toggleTag(displayIdx) {
+    const jsDay = WOCHENTAGE_JSDAY[displayIdx];
+    if (selectedRoutineTage.has(jsDay)) selectedRoutineTage.delete(jsDay);
+    else selectedRoutineTage.add(jsDay);
     renderTagPicker();
   }
 
@@ -1260,7 +1288,7 @@
     const titel = document.getElementById('routine-titel').value.trim();
     if (!titel) return;
     if (selectedRoutineTage.size === 0) { showToast('Bitte mindestens einen Wochentag wählen'); return; }
-    const zugewiesen_an = document.getElementById('routine-zugewiesen').value.trim() || null;
+    const zugewiesen_an = document.getElementById('routine-zugewiesen').value || null;
     const uhrzeit = document.getElementById('routine-uhrzeit').value || '08:00';
     setSync('syncing', 'Speichert...');
     await db.from('routinen').insert({
@@ -1271,6 +1299,7 @@
     });
     document.getElementById('routine-titel').value = '';
     document.getElementById('routine-zugewiesen').value = '';
+    populateMemberSelects();
     document.getElementById('routine-uhrzeit').value = '08:00';
     selectedRoutineTage.clear();
     routineFormOpen = false;
@@ -1301,9 +1330,10 @@
       const istHeute = tage.includes(todayIdx);
       const isDone = done.has(r.id);
       const uhrzeit = r.uhrzeit ? r.uhrzeit.slice(0, 5) + ' Uhr' : '';
-      const dayPills = WOCHENTAGE.map((tag, i) => {
-        const active = tage.includes(i);
-        const today  = i === todayIdx;
+      const dayPills = WOCHENTAGE.map((tag, displayIdx) => {
+        const jsDay = WOCHENTAGE_JSDAY[displayIdx];
+        const active = tage.includes(jsDay);
+        const today  = jsDay === todayIdx;
         const cls = today && active ? 'today' : active ? 'active' : '';
         return `<span class="day-pill ${cls}">${tag}</span>`;
       }).join('');
