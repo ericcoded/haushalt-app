@@ -698,7 +698,7 @@
   }
 
   function memberName(m) {
-    return m.email ? m.email.split('@')[0] : 'Mitglied';
+    return m.display_name || (m.email ? m.email.split('@')[0] : 'Mitglied');
   }
 
   function memberOptionsHtml(currentValue) {
@@ -721,7 +721,7 @@
   async function loadMembers() {
     const { data } = await db
       .from('haushalt_mitglieder')
-      .select('user_id, email')
+      .select('user_id, email, display_name')
       .eq('haushalt_id', currentHaushalt.id);
     if (!data) return;
     members = data.map(m =>
@@ -729,18 +729,35 @@
     );
     populateMemberSelects();
     const bar = document.getElementById('members-bar');
-    bar.innerHTML = data.map(m => {
+    bar.innerHTML = members.map(m => {
       const isMe = m.user_id === currentUser.id;
-      const initial = (m.email || '?')[0].toUpperCase();
+      const name = memberName(m);
+      const initial = name[0].toUpperCase();
       const color = isMe ? '#eeedfe' : '#e1f5ee';
       const textColor = isMe ? '#534ab7' : '#0f6e56';
-      const email = m.email ? m.email.split('@')[0] : 'Mitglied';
+      const editBtn = isMe
+        ? `<button onclick="editDisplayName()" style="background:none;border:none;cursor:pointer;font-size:11px;color:#aaa;padding:0 2px" title="Namen ändern">✏️</button>`
+        : '';
       return `<div class="member-chip">
         <div class="member-avatar" style="background:${color};color:${textColor}">${initial}</div>
-        <span class="member-email">${email}</span>
-        ${isMe ? '<span class="member-you">(du)</span>' : ''}
+        <span class="member-email">${name}</span>
+        ${editBtn}
       </div>`;
     }).join('');
+  }
+
+  async function editDisplayName() {
+    const me = members.find(m => m.user_id === currentUser.id);
+    const current = me?.display_name || '';
+    const name = prompt('Dein Anzeigename:', current);
+    if (name === null) return; // abgebrochen
+    const trimmed = name.trim();
+    await db.from('haushalt_mitglieder')
+      .update({ display_name: trimmed || null })
+      .eq('user_id', currentUser.id)
+      .eq('haushalt_id', currentHaushalt.id);
+    await loadMembers();
+    showToast('Name gespeichert ✓');
   }
 
   function startApp() {
