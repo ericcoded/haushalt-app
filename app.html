@@ -1473,11 +1473,13 @@
   async function serverPushTest() {
     try {
       showToast('Sende Server-Test...');
-      const token = getStoredSession()?.access_token;
-      if (!token) { showToast('Nicht eingeloggt'); return; }
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (!sub) { showToast('Keine aktive Subscription'); return; }
       const res = await fetch('https://awvcltzpqxfnuwikbiyl.supabase.co/functions/v1/send-push', {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription: sub.toJSON() }),
       });
       const text = await res.text();
       showToast(res.ok ? `Server: ${text}` : `Fehler: ${text}`);

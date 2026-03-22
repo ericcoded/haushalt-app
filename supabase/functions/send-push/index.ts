@@ -133,39 +133,30 @@ Deno.serve(async (req) => {
 
   const db = createClient(supabaseUrl, serviceKey);
 
-  // ── POST: Direkter Test-Push für den anfragenden Nutzer ────────
+  // ── POST: Direkter Test-Push mit übergebener Subscription ─────
   if (req.method === 'POST') {
-    const authHeader = req.headers.get('Authorization') ?? '';
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userErr } = await db.auth.getUser(token);
-    if (userErr || !user) return new Response('Unauthorized', { status: 401, headers: CORS });
-
-    const { data: subs } = await db
-      .from('push_subscriptions')
-      .select('subscription_json')
-      .eq('user_id', user.id);
-
-    if (!subs?.length) return new Response('No subscriptions found', { status: 404, headers: CORS });
-
-    const payload = JSON.stringify({ title: '🔔 Server-Test', body: 'Push über Server empfangen!', url: '/app', tag: 'server-test' });
-    let sent = 0, failed = 0;
-    for (const { subscription_json } of subs) {
-      const sub = JSON.parse(subscription_json);
-      const domain = new URL(sub.endpoint).hostname;
-      try {
-        await sendPush(sub.endpoint, sub.keys.p256dh, sub.keys.auth, payload, vapidPublicKey, vapidPrivateKey, vapidSubject);
-        console.log(`✓ test push sent to ${domain}`);
-        sent++;
-      } catch(e) {
-        const err = e as Error;
-        console.error(`✗ test push failed ${domain}: ${err.message}`);
-        if (err.message.includes('410')) {
-          await db.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
-        }
-        failed++;
-      }
+    let sub: { endpoint: string; keys: { p256dh: string; auth: string } };
+    try {
+      const body = await req.json();
+      sub = body.subscription;
+      if (!sub?.endpoint || !sub?.keys?.p256dh || !sub?.keys?.auth) throw new Error('invalid');
+    } catch {
+      return new Response('Bad Request: subscription fehlt', { status: 400, headers: CORS });
     }
-    return new Response(`Test: sent=${sent}, failed=${failed}`, { status: 200, headers: CORS });
+    const payload = JSON.stringify({ title: '🔔 Server-Test', body: 'Push über Server empfangen!', url: '/app', tag: 'server-test' });
+    const domain = new URL(sub.endpoint).hostname;
+    try {
+      await sendPush(sub.endpoint, sub.keys.p256dh, sub.keys.auth, payload, vapidPublicKey, vapidPrivateKey, vapidSubject);
+      console.log(`✓ test push sent to ${domain}`);
+      return new Response(`Test: sent to ${domain}`, { status: 200, headers: CORS });
+    } catch(e) {
+      const err = e as Error;
+      console.error(`✗ test push failed ${domain}: ${err.message}`);
+      if (err.message.includes('410')) {
+        await db.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
+      }
+      return new Response(`Test failed: ${err.message}`, { status: 500, headers: CORS });
+    }
   }
 
   // Aktuelle Uhrzeit in Europe/Berlin
