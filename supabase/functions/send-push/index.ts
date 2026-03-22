@@ -7,8 +7,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 // ── Hilfsfunktionen ────────────────────────────────────────────
 
 function b64uToBytes(b64u: string): Uint8Array {
-  const b64 = b64u.replace(/-/g, '+').replace(/_/g, '/');
-  const padded = b64.padEnd(b64.length + (4 - b64.length % 4) % 4, '=');
+  // Strip whitespace + existing padding, convert to standard base64, re-pad
+  const b64 = b64u.trim().replace(/-/g, '+').replace(/_/g, '/').replace(/=/g, '');
+  const padded = b64 + '='.repeat((4 - b64.length % 4) % 4);
   return Uint8Array.from(atob(padded), c => c.charCodeAt(0));
 }
 
@@ -33,18 +34,14 @@ async function createVapidJWT(audience: string, subject: string, privKeyB64u: st
   const now     = Math.floor(Date.now() / 1000);
   const payload = bytesToB64u(te.encode(JSON.stringify({ aud: audience, exp: now + 43200, sub: subject })));
 
-  // Raw 32-byte P-256 private key → PKCS8 DER wrapper
-  const rawPriv = b64uToBytes(privKeyB64u);
-  const pkcs8 = new Uint8Array([
-    0x30, 0x41, 0x02, 0x01, 0x00,
-    0x30, 0x13,
-      0x06, 0x07, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x02, 0x01,
-      0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x03, 0x01, 0x07,
-    0x04, 0x27,
-      0x30, 0x25, 0x02, 0x01, 0x01, 0x04, 0x20, ...rawPriv,
-  ]);
+  // Öffentlichen Key (04 || x || y) in x und y aufteilen für JWK-Import
+  const pubBytes = b64uToBytes(pubKeyB64u); // 65 bytes: 04 + 32 + 32
+  const x = bytesToB64u(pubBytes.slice(1, 33));
+  const y = bytesToB64u(pubBytes.slice(33, 65));
 
-  const sigKey = await crypto.subtle.importKey('pkcs8', pkcs8, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
+  // JWK-Format statt PKCS8 – zuverlässiger in Deno
+  const jwk = { kty: 'EC', crv: 'P-256', d: privKeyB64u, x, y };
+  const sigKey = await crypto.subtle.importKey('jwk', jwk, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
   const sig    = await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, sigKey, te.encode(`${header}.${payload}`));
   return `${header}.${payload}.${bytesToB64u(new Uint8Array(sig))}`;
 }
@@ -172,7 +169,8 @@ Deno.serve(async () => {
         await sendPush(sub.endpoint, sub.keys.p256dh, sub.keys.auth, payload, vapidPublicKey, vapidPrivateKey, vapidSubject);
         sent++;
       } catch(e) {
-        console.error('sendPush failed:', (e as Error).message);
+        const err = e as Error;
+        console.error('sendPush failed:', err.name, err.message, err.stack?.split('\n')[1]);
         failed++;
       }
     }
