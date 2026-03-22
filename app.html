@@ -375,6 +375,9 @@
         <span class="push-banner-text">Aktiviere Benachrichtigungen um Routine-Erinnerungen zu erhalten.</span>
         <button class="push-enable-btn" onclick="requestPush()">Aktivieren</button>
       </div>
+      <div id="push-active-bar" style="display:none;text-align:right;margin-bottom:8px">
+        <button onclick="unsubscribePush()" style="background:none;border:none;font-size:12px;color:#aaa;cursor:pointer;padding:0">🔔 Benachrichtigungen deaktivieren</button>
+      </div>
 
       <!-- ROUTINEN -->
       <div class="routinen-section">
@@ -1444,11 +1447,29 @@
 
   function updatePushBanner() {
     const banner = document.getElementById('push-banner');
+    const activeBar = document.getElementById('push-active-bar');
     if (!banner) return;
     const supported = 'serviceWorker' in navigator && 'PushManager' in window && VAPID_PUBLIC_KEY !== 'HIER_VAPID_PUBLIC_KEY_EINTRAGEN';
     const needed = routinen.length > 0;
-    const alreadyGranted = Notification.permission === 'granted';
-    banner.style.display = (supported && needed && !alreadyGranted) ? 'flex' : 'none';
+    const granted = Notification.permission === 'granted';
+    banner.style.display   = (supported && needed && !granted) ? 'flex' : 'none';
+    if (activeBar) activeBar.style.display = (supported && granted) ? 'block' : 'none';
+  }
+
+  async function unsubscribePush() {
+    if (!confirm('Benachrichtigungen deaktivieren?')) return;
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (sub) {
+        await db.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
+        await sub.unsubscribe();
+      }
+      showToast('Benachrichtigungen deaktiviert');
+      updatePushBanner();
+    } catch(e) {
+      console.error('Unsubscribe error:', e);
+    }
   }
 
   async function initPushState() {
