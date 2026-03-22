@@ -1455,10 +1455,14 @@
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
     if (VAPID_PUBLIC_KEY === 'HIER_VAPID_PUBLIC_KEY_EINTRAGEN') return;
     const reg = await navigator.serviceWorker.register('/sw.js');
-    // Wenn Nutzer bereits zugestimmt hat: Subscription prüfen / erneuern
     if (Notification.permission === 'granted') {
-      const sub = await reg.pushManager.getSubscription();
-      if (!sub) await subscribePush(reg);
+      // Immer die aktuelle Subscription in DB schreiben (schützt gegen Überschreiben durch anderes Gerät)
+      let sub = await reg.pushManager.getSubscription();
+      if (!sub) sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      }).catch(() => null);
+      if (sub) await subscribePush(sub);
     }
   }
 
@@ -1466,17 +1470,17 @@
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') { showToast('Benachrichtigungen abgelehnt'); return; }
     const reg = await navigator.serviceWorker.ready;
-    await subscribePush(reg);
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+    });
+    await subscribePush(sub);
     updatePushBanner();
     showToast('Benachrichtigungen aktiviert ✓');
   }
 
-  async function subscribePush(reg) {
+  async function subscribePush(sub) {
     try {
-      const sub = await reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-      });
       await db.from('push_subscriptions').upsert({
         user_id: currentUser.id,
         haushalt_id: currentHaushalt.id,
