@@ -1473,10 +1473,11 @@
   async function serverPushTest() {
     try {
       showToast('Sende Server-Test...');
-      const { data: { session } } = await db.auth.getSession();
-      const res = await fetch('https://awvvcltzpqxfnuwikbiyl.supabase.co/functions/v1/send-push', {
+      const token = getStoredSession()?.access_token;
+      if (!token) { showToast('Nicht eingeloggt'); return; }
+      const res = await fetch('https://awvcltzpqxfnuwikbiyl.supabase.co/functions/v1/send-push', {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${session.access_token}` },
+        headers: { 'Authorization': `Bearer ${token}` },
       });
       const text = await res.text();
       showToast(res.ok ? `Server: ${text}` : `Fehler: ${text}`);
