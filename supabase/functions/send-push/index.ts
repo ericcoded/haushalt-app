@@ -93,9 +93,11 @@ async function sendPush(
   payload: string, vapidPub: string, vapidPriv: string, vapidSub: string
 ): Promise<void> {
   const audience = (() => { const u = new URL(endpoint); return `${u.protocol}//${u.host}`; })();
+  console.log('1. createVapidJWT...');
   const jwt  = await createVapidJWT(audience, vapidSub, vapidPriv, vapidPub);
+  console.log('2. encryptPayload...');
   const body = await encryptPayload(p256dh, auth, payload);
-
+  console.log('3. fetch push endpoint...');
   const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
@@ -106,7 +108,7 @@ async function sendPush(
     },
     body,
   });
-
+  console.log('4. response status:', res.status);
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`Push HTTP ${res.status}: ${text}`);
@@ -147,6 +149,7 @@ Deno.serve(async () => {
 
   const faellig = (routinen ?? []).filter(r => r.uhrzeit?.slice(0, 5) === currentTime);
   console.log(`Routinen found: ${routinen?.length ?? 0}, faellig: ${faellig.length}`);
+  routinen?.forEach(r => console.log(`  Routine "${r.titel}": uhrzeit="${r.uhrzeit}" → slice="${r.uhrzeit?.slice(0,5)}" === currentTime="${currentTime}"? ${r.uhrzeit?.slice(0,5) === currentTime}`));
 
   if (!faellig.length) return new Response('OK – keine fälligen Routinen', { status: 200 });
 
@@ -164,13 +167,21 @@ Deno.serve(async () => {
     const payload = JSON.stringify({ title: routine.titel, body, url: '/app', tag: `routine-${routine.id}` });
 
     for (const { subscription_json } of subs) {
+      const sub = JSON.parse(subscription_json);
+      const domain = new URL(sub.endpoint).hostname;
       try {
-        const sub = JSON.parse(subscription_json);
+        console.log(`Sending to ${domain}...`);
         await sendPush(sub.endpoint, sub.keys.p256dh, sub.keys.auth, payload, vapidPublicKey, vapidPrivateKey, vapidSubject);
+        console.log(`✓ sent to ${domain}`);
         sent++;
       } catch(e) {
         const err = e as Error;
-        console.error('sendPush failed:', err.name, err.message, err.stack?.split('\n')[1]);
+        console.error(`✗ failed ${domain}: ${err.message}`);
+        // 410 = Subscription abgelaufen → aus DB löschen
+        if (err.message.includes('410')) {
+          await db.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
+          console.log(`Deleted stale subscription for ${domain}`);
+        }
         failed++;
       }
     }
