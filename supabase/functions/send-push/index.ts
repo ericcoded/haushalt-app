@@ -25,12 +25,20 @@ Deno.serve(async () => {
 
   const db = createClient(supabaseUrl, serviceKey);
 
-  // Aktuelle Uhrzeit auf Minuten gerundet (UTC)
+  // Aktuelle Uhrzeit in Europe/Berlin (CET/CEST automatisch)
   const now = new Date();
-  const hh = String(now.getUTCHours()).padStart(2, '0');
-  const mm = String(now.getUTCMinutes()).padStart(2, '0');
+  const fmt = new Intl.DateTimeFormat('de-DE', {
+    timeZone: 'Europe/Berlin',
+    hour: '2-digit', minute: '2-digit', weekday: 'short',
+    hour12: false,
+  });
+  const parts = Object.fromEntries(fmt.formatToParts(now).map(p => [p.type, p.value]));
+  const hh = parts.hour.padStart(2, '0');
+  const mm = parts.minute.padStart(2, '0');
   const currentTime = `${hh}:${mm}`;
-  const currentDay  = now.getUTCDay(); // 0=So … 6=Sa
+  // Wochentag: Intl gibt 'Mo'/'Di' etc. → in JS-getDay()-Index umrechnen
+  const WEEKDAY_MAP: Record<string, number> = { So:0, Mo:1, Di:2, Mi:3, Do:4, Fr:5, Sa:6 };
+  const currentDay = WEEKDAY_MAP[parts.weekday] ?? now.getDay();
 
   // Routinen finden, die jetzt fällig sind
   // wiederholung_tage enthält den aktuellen Wochentag UND uhrzeit passt
