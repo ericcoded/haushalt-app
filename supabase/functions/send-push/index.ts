@@ -117,7 +117,7 @@ async function sendPush(
 
 // ── Main ──────────────────────────────────────────────────────
 
-Deno.serve(async () => {
+Deno.serve(async (req) => {
   const supabaseUrl     = Deno.env.get('SUPABASE_URL')!;
   const serviceKey      = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const vapidSubject    = Deno.env.get('VAPID_SUBJECT')!;
@@ -125,6 +125,43 @@ Deno.serve(async () => {
   const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY')!;
 
   const db = createClient(supabaseUrl, serviceKey);
+
+  // ── POST: Direkter Test-Push für den anfragenden Nutzer ────────
+  if (req.method === 'POST') {
+    const authHeader = req.headers.get('Authorization') ?? '';
+    const userDb = createClient(supabaseUrl, authHeader.replace('Bearer ', ''), {
+      auth: { persistSession: false },
+    });
+    const { data: { user }, error: userErr } = await userDb.auth.getUser();
+    if (userErr || !user) return new Response('Unauthorized', { status: 401 });
+
+    const { data: subs } = await db
+      .from('push_subscriptions')
+      .select('subscription_json')
+      .eq('user_id', user.id);
+
+    if (!subs?.length) return new Response('No subscriptions found', { status: 404 });
+
+    const payload = JSON.stringify({ title: '🔔 Server-Test', body: 'Push über Server empfangen!', url: '/app', tag: 'server-test' });
+    let sent = 0, failed = 0;
+    for (const { subscription_json } of subs) {
+      const sub = JSON.parse(subscription_json);
+      const domain = new URL(sub.endpoint).hostname;
+      try {
+        await sendPush(sub.endpoint, sub.keys.p256dh, sub.keys.auth, payload, vapidPublicKey, vapidPrivateKey, vapidSubject);
+        console.log(`✓ test push sent to ${domain}`);
+        sent++;
+      } catch(e) {
+        const err = e as Error;
+        console.error(`✗ test push failed ${domain}: ${err.message}`);
+        if (err.message.includes('410')) {
+          await db.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
+        }
+        failed++;
+      }
+    }
+    return new Response(`Test: sent=${sent}, failed=${failed}`, { status: 200 });
+  }
 
   // Aktuelle Uhrzeit in Europe/Berlin
   const now  = new Date();

@@ -12,7 +12,8 @@ self.addEventListener('fetch', e => {
 });
 
 self.addEventListener('push', e => {
-  const data = e.data?.json() || {};
+  let data = {};
+  try { data = e.data?.json() || {}; } catch(_) {}
   const title = data.title || 'Haushalt Erinnerung';
   const options = {
     body: data.body || '',
@@ -22,6 +23,12 @@ self.addEventListener('push', e => {
     tag: data.tag || 'haushalt-reminder',
     renotify: true,
   };
+  // Notify open app tabs that push arrived (for diagnostics)
+  try {
+    const bc = new BroadcastChannel('push-received');
+    bc.postMessage({ title, ts: Date.now() });
+    bc.close();
+  } catch(_) {}
   e.waitUntil(self.registration.showNotification(title, options));
 });
 
