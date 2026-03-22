@@ -117,7 +117,14 @@ async function sendPush(
 
 // ── Main ──────────────────────────────────────────────────────
 
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+};
+
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
+
   const supabaseUrl     = Deno.env.get('SUPABASE_URL')!;
   const serviceKey      = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
   const vapidSubject    = Deno.env.get('VAPID_SUBJECT')!;
@@ -133,14 +140,14 @@ Deno.serve(async (req) => {
       auth: { persistSession: false },
     });
     const { data: { user }, error: userErr } = await userDb.auth.getUser();
-    if (userErr || !user) return new Response('Unauthorized', { status: 401 });
+    if (userErr || !user) return new Response('Unauthorized', { status: 401, headers: CORS });
 
     const { data: subs } = await db
       .from('push_subscriptions')
       .select('subscription_json')
       .eq('user_id', user.id);
 
-    if (!subs?.length) return new Response('No subscriptions found', { status: 404 });
+    if (!subs?.length) return new Response('No subscriptions found', { status: 404, headers: CORS });
 
     const payload = JSON.stringify({ title: '🔔 Server-Test', body: 'Push über Server empfangen!', url: '/app', tag: 'server-test' });
     let sent = 0, failed = 0;
@@ -160,7 +167,7 @@ Deno.serve(async (req) => {
         failed++;
       }
     }
-    return new Response(`Test: sent=${sent}, failed=${failed}`, { status: 200 });
+    return new Response(`Test: sent=${sent}, failed=${failed}`, { status: 200, headers: CORS });
   }
 
   // Aktuelle Uhrzeit in Europe/Berlin
