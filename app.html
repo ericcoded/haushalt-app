@@ -205,6 +205,41 @@
     /* SORT-LEISTE */
     .sort-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 1rem; flex-wrap: wrap; }
     .sort-label { font-size: 12px; color: #aaa; white-space: nowrap; font-weight: 500; }
+
+    /* ROUTINEN */
+    .routinen-section { margin-bottom: 1.25rem; }
+    .routinen-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .routinen-title { font-size: 12px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: .06em; }
+    .routine-add-btn { background: none; border: 1px solid #e0e0d8; border-radius: 8px; padding: 5px 10px; font-size: 12px; color: #7f77dd; cursor: pointer; }
+    .routine-add-btn:hover { background: #f5f4ff; }
+    .routine-form { background: white; border: 1px solid #e8e8e3; border-radius: 14px; padding: 1rem; margin-bottom: 10px; }
+    .routine-form input { width: 100%; padding: 9px 12px; border: 1px solid #e0e0d8; border-radius: 10px; font-size: 14px; background: white; outline: none; font-family: inherit; }
+    .routine-form input:focus { border-color: #7f77dd; }
+    .tag-picker { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 8px; }
+    .tag-btn { padding: 5px 10px; border-radius: 99px; border: 1px solid #e0e0d8; background: white; color: #888; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+    .tag-btn.active { background: #7f77dd; border-color: #7f77dd; color: white; }
+    .routine-card { background: white; border: 1px solid #e8e8e3; border-radius: 12px; padding: 12px 13px; margin-bottom: 8px; }
+    .routine-card.heute { border-color: #7f77dd; background: #f9f8ff; }
+    .routine-card.erledigt { opacity: 0.5; }
+    .routine-card-top { display: flex; align-items: center; gap: 8px; }
+    .routine-titel { font-size: 14px; font-weight: 600; color: #1a1a1a; flex: 1; }
+    .routine-check { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid #ccc; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; transition: all 0.15s; }
+    .routine-check.done { background: #1d9e75; border-color: #1d9e75; color: white; }
+    .routine-meta { display: flex; align-items: center; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+    .day-pills { display: flex; gap: 3px; }
+    .day-pill { font-size: 10px; font-weight: 600; padding: 2px 6px; border-radius: 99px; background: #f0f0eb; color: #ccc; }
+    .day-pill.active { background: #eeedfe; color: #534ab7; }
+    .day-pill.today { background: #7f77dd; color: white; }
+    .routine-time { font-size: 12px; color: #888; }
+    .routine-person { font-size: 12px; color: #888; }
+    .tab-section-label { font-size: 12px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+    .section-divider { height: 1px; background: #e8e8e3; margin-bottom: 1.25rem; }
+
+    /* PUSH OPT-IN */
+    .push-banner { background: #eeedfe; border: 1px solid #c5c2f5; border-radius: 12px; padding: 12px 14px; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 10px; }
+    .push-banner-text { flex: 1; font-size: 13px; color: #534ab7; line-height: 1.4; }
+    .push-enable-btn { background: #7f77dd; color: white; border: none; border-radius: 8px; padding: 7px 12px; font-size: 12px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+    .push-enable-btn:hover { background: #6b63c9; }
   </style>
 </head>
 <body>
@@ -330,6 +365,38 @@
     </div>
 
     <div id="tab-aufgaben" style="display:none">
+
+      <!-- PUSH BANNER -->
+      <div id="push-banner" class="push-banner" style="display:none">
+        <span style="font-size:20px">🔔</span>
+        <span class="push-banner-text">Aktiviere Benachrichtigungen um Routine-Erinnerungen zu erhalten.</span>
+        <button class="push-enable-btn" onclick="requestPush()">Aktivieren</button>
+      </div>
+
+      <!-- ROUTINEN -->
+      <div class="routinen-section">
+        <div class="routinen-header">
+          <span class="routinen-title">🔄 Routinen</span>
+          <button class="routine-add-btn" onclick="toggleRoutineForm()">+ Neue Routine</button>
+        </div>
+        <div id="routine-form" class="routine-form" style="display:none">
+          <div class="form-titel" style="margin-bottom:8px">
+            <input type="text" id="routine-titel" placeholder="z.B. Müll rausbringen" />
+          </div>
+          <div class="form-row" style="margin-bottom:8px">
+            <input type="text" id="routine-zugewiesen" placeholder="👤 Zugewiesen an" />
+            <input type="time" id="routine-uhrzeit" value="08:00" />
+          </div>
+          <div style="font-size:12px;color:#aaa;font-weight:500;margin-bottom:6px">Wochentage</div>
+          <div class="tag-picker" id="tag-picker"></div>
+          <button class="primary" style="width:100%" onclick="addRoutine()">+ Routine erstellen</button>
+        </div>
+        <div id="routinen-list"></div>
+      </div>
+
+      <div class="section-divider"></div>
+      <div class="tab-section-label">Aufgaben</div>
+
       <div class="aufgaben-form">
         <div class="aufgaben-form-title">Neue Aufgabe</div>
         <div class="form-titel">
@@ -533,13 +600,21 @@
     return `${word}-${num}`;
   }
 
+  // VAPID Public Key – nach "npx web-push generate-vapid-keys" hier eintragen:
+  const VAPID_PUBLIC_KEY = 'BEZ35rfnfi2IGnkKnSoO1EFYI40O6sALID7WTTX4l0lz_JR7sXASsh_KXRTLJ6LfdqqKcJNJsDxYRz1psuEx2Zg';
+
   let items = [];
   let aufgaben = [];
+  let routinen = [];
+  let selectedRoutineTage = new Set();
+  let routineFormOpen = false;
   let aufgabenSort = 'prioritaet';
   let aufgabenEditId = null;
   let activeFilter = 'Alle';
   let currentUser = null;
   let currentHaushalt = null;
+
+  const WOCHENTAGE = ['So','Mo','Di','Mi','Do','Fr','Sa'];
 
   function setSync(status, text) {
     const el = document.getElementById('sync-status');
@@ -646,7 +721,9 @@
     loadItems();
     loadMembers();
     loadAufgaben();
+    loadRoutinen();
     subscribeRealtime();
+    initPushState();
   }
 
   async function loadItems() {
@@ -665,6 +742,7 @@
     db.channel('haushalt-' + currentHaushalt.id)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'haushalt_items' }, () => loadItems())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'aufgaben' }, () => loadAufgaben())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'routinen' }, () => loadRoutinen())
       .subscribe();
   }
 
@@ -1133,6 +1211,176 @@
     return `<div class="shop-item ${i.bought?'bought':''}"><button class="shop-check ${i.bought?'done':''}" onclick="toggleBought('${safeId}')">${i.bought?'✓':''}</button><span class="shop-emoji">${getEmoji(i.name)}</span><span class="shop-name">${i.name}</span><input class="shop-menge-input" type="text" value="${mengeVal}" placeholder="Menge" onblur="updateMenge('${safeId}',this.value)" onkeydown="if(event.key==='Enter'){this.blur()}" /><span class="source-tag ${i.source}">${i.source==='vorrat'?'Vorrat':'Manuell'}</span><button class="del-btn" onclick="delShopItem('${safeId}')">✕</button></div>`;
   }
 
+  // ── ROUTINEN ──────────────────────────────────────────────────
+
+  function getRoutineDoneKey() {
+    return 'routinen-done-' + new Date().toISOString().slice(0, 10);
+  }
+
+  function getRoutineDoneToday() {
+    try { return new Set(JSON.parse(localStorage.getItem(getRoutineDoneKey()) || '[]')); } catch(e) { return new Set(); }
+  }
+
+  function markRoutineDone(id, done) {
+    const s = getRoutineDoneToday();
+    if (done) s.add(id); else s.delete(id);
+    localStorage.setItem(getRoutineDoneKey(), JSON.stringify([...s]));
+    renderRoutinen();
+  }
+
+  function toggleRoutineForm() {
+    routineFormOpen = !routineFormOpen;
+    document.getElementById('routine-form').style.display = routineFormOpen ? 'block' : 'none';
+    if (routineFormOpen) renderTagPicker();
+  }
+
+  function renderTagPicker() {
+    const el = document.getElementById('tag-picker');
+    if (!el) return;
+    el.innerHTML = WOCHENTAGE.map((tag, i) =>
+      `<button type="button" class="tag-btn ${selectedRoutineTage.has(i) ? 'active' : ''}" onclick="toggleTag(${i})">${tag}</button>`
+    ).join('');
+  }
+
+  function toggleTag(i) {
+    if (selectedRoutineTage.has(i)) selectedRoutineTage.delete(i);
+    else selectedRoutineTage.add(i);
+    renderTagPicker();
+  }
+
+  async function loadRoutinen() {
+    if (!currentHaushalt) return;
+    const { data } = await db.from('routinen').select('*').eq('haushalt_id', currentHaushalt.id).order('created_at');
+    routinen = data || [];
+    renderRoutinen();
+    updatePushBanner();
+  }
+
+  async function addRoutine() {
+    const titel = document.getElementById('routine-titel').value.trim();
+    if (!titel) return;
+    if (selectedRoutineTage.size === 0) { showToast('Bitte mindestens einen Wochentag wählen'); return; }
+    const zugewiesen_an = document.getElementById('routine-zugewiesen').value.trim() || null;
+    const uhrzeit = document.getElementById('routine-uhrzeit').value || '08:00';
+    setSync('syncing', 'Speichert...');
+    await db.from('routinen').insert({
+      titel, zugewiesen_an, uhrzeit,
+      wiederholung_tage: [...selectedRoutineTage],
+      haushalt_id: currentHaushalt.id,
+      erstellt_von: currentUser.id,
+    });
+    document.getElementById('routine-titel').value = '';
+    document.getElementById('routine-zugewiesen').value = '';
+    document.getElementById('routine-uhrzeit').value = '08:00';
+    selectedRoutineTage.clear();
+    routineFormOpen = false;
+    document.getElementById('routine-form').style.display = 'none';
+    await loadRoutinen();
+    setSync('', 'Synchronisiert ✓');
+  }
+
+  async function delRoutine(id) {
+    setSync('syncing', 'Löscht...');
+    await db.from('routinen').delete().eq('id', id);
+    await loadRoutinen();
+    setSync('', 'Synchronisiert ✓');
+  }
+
+  function renderRoutinen() {
+    const list = document.getElementById('routinen-list');
+    if (!list) return;
+    const todayIdx = new Date().getDay(); // 0=So … 6=Sa
+    const done = getRoutineDoneToday();
+
+    if (!routinen.length) {
+      list.innerHTML = '<div style="font-size:13px;color:#ccc;padding:4px 0 8px">Noch keine Routinen.</div>';
+      return;
+    }
+    list.innerHTML = routinen.map(r => {
+      const tage = r.wiederholung_tage || [];
+      const istHeute = tage.includes(todayIdx);
+      const isDone = done.has(r.id);
+      const uhrzeit = r.uhrzeit ? r.uhrzeit.slice(0, 5) + ' Uhr' : '';
+      const dayPills = WOCHENTAGE.map((tag, i) => {
+        const active = tage.includes(i);
+        const today  = i === todayIdx;
+        const cls = today && active ? 'today' : active ? 'active' : '';
+        return `<span class="day-pill ${cls}">${tag}</span>`;
+      }).join('');
+      const checkBtn = istHeute
+        ? `<button class="routine-check ${isDone ? 'done' : ''}" onclick="markRoutineDone('${r.id}',${!isDone})">${isDone ? '✓' : ''}</button>`
+        : '';
+      return `<div class="routine-card ${istHeute && !isDone ? 'heute' : ''} ${istHeute && isDone ? 'erledigt' : ''}">
+        <div class="routine-card-top">
+          ${checkBtn}
+          <span class="routine-titel">${esc(r.titel)}</span>
+          <button class="aufg-del" onclick="delRoutine('${r.id}')">✕</button>
+        </div>
+        <div class="routine-meta">
+          <div class="day-pills">${dayPills}</div>
+          ${uhrzeit ? `<span class="routine-time">🕐 ${uhrzeit}</span>` : ''}
+          ${r.zugewiesen_an ? `<span class="routine-person">👤 ${esc(r.zugewiesen_an)}</span>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── PUSH NOTIFICATIONS ────────────────────────────────────────
+
+  function updatePushBanner() {
+    const banner = document.getElementById('push-banner');
+    if (!banner) return;
+    const supported = 'serviceWorker' in navigator && 'PushManager' in window && VAPID_PUBLIC_KEY !== 'HIER_VAPID_PUBLIC_KEY_EINTRAGEN';
+    const needed = routinen.length > 0;
+    const alreadyGranted = Notification.permission === 'granted';
+    banner.style.display = (supported && needed && !alreadyGranted) ? 'flex' : 'none';
+  }
+
+  async function initPushState() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    if (VAPID_PUBLIC_KEY === 'HIER_VAPID_PUBLIC_KEY_EINTRAGEN') return;
+    const reg = await navigator.serviceWorker.register('/sw.js');
+    // Wenn Nutzer bereits zugestimmt hat: Subscription prüfen / erneuern
+    if (Notification.permission === 'granted') {
+      const sub = await reg.pushManager.getSubscription();
+      if (!sub) await subscribePush(reg);
+    }
+  }
+
+  async function requestPush() {
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') { showToast('Benachrichtigungen abgelehnt'); return; }
+    const reg = await navigator.serviceWorker.ready;
+    await subscribePush(reg);
+    updatePushBanner();
+    showToast('Benachrichtigungen aktiviert ✓');
+  }
+
+  async function subscribePush(reg) {
+    try {
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+      await db.from('push_subscriptions').upsert({
+        user_id: currentUser.id,
+        haushalt_id: currentHaushalt.id,
+        subscription_json: JSON.stringify(sub),
+      }, { onConflict: 'user_id' });
+    } catch(e) {
+      console.error('Push subscribe error:', e);
+    }
+  }
+
+  function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = atob(base64);
+    return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+  }
+
+  // ─────────────────────────────────────────────────────────────
+
   document.addEventListener('keydown', e => {
     if (e.key === 'Enter') {
       if (document.activeElement.id === 'login-email') sendMagicLink();
@@ -1220,9 +1468,7 @@
   if (!hasError) initAuth();
 
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(regs => {
-      regs.forEach(reg => reg.unregister());
-    });
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
   }
 </script>
 </body>
