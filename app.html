@@ -375,8 +375,9 @@
         <span class="push-banner-text">Aktiviere Benachrichtigungen um Routine-Erinnerungen zu erhalten.</span>
         <button class="push-enable-btn" onclick="requestPush()">Aktivieren</button>
       </div>
-      <div id="push-active-bar" style="display:none;text-align:right;margin-bottom:8px">
-        <button onclick="unsubscribePush()" style="background:none;border:none;font-size:12px;color:#aaa;cursor:pointer;padding:0">🔔 Benachrichtigungen deaktivieren</button>
+      <div id="push-active-bar" style="display:none;text-align:right;margin-bottom:8px;justify-content:flex-end;gap:12px">
+        <button onclick="testNotification()" style="background:none;border:none;font-size:12px;color:#7f77dd;cursor:pointer;padding:0">🔔 Testbenachrichtigung</button>
+        <button onclick="unsubscribePush()" style="background:none;border:none;font-size:12px;color:#aaa;cursor:pointer;padding:0">Deaktivieren</button>
       </div>
 
       <!-- ROUTINEN -->
@@ -1456,7 +1457,22 @@
     const supported = 'serviceWorker' in navigator && 'PushManager' in window && VAPID_PUBLIC_KEY !== 'HIER_VAPID_PUBLIC_KEY_EINTRAGEN';
     const needed = routinen.length > 0;
     banner.style.display   = (supported && needed && !pushSubscribed) ? 'flex' : 'none';
-    if (activeBar) activeBar.style.display = (supported && pushSubscribed) ? 'block' : 'none';
+    if (activeBar) activeBar.style.display = (supported && pushSubscribed) ? 'flex' : 'none';
+  }
+
+  async function testNotification() {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      await reg.showNotification('🔔 Testbenachrichtigung', {
+        body: 'Wenn du das siehst, funktioniert der Service Worker korrekt!',
+        icon: '/icons/icon.svg',
+        tag: 'test-notification',
+      });
+      showToast('Testbenachrichtigung gesendet');
+    } catch(e) {
+      showToast('Fehler: ' + e.message);
+      console.error('testNotification error:', e);
+    }
   }
 
   async function unsubscribePush() {
