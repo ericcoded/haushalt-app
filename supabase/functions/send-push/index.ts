@@ -136,10 +136,8 @@ Deno.serve(async (req) => {
   // ── POST: Direkter Test-Push für den anfragenden Nutzer ────────
   if (req.method === 'POST') {
     const authHeader = req.headers.get('Authorization') ?? '';
-    const userDb = createClient(supabaseUrl, authHeader.replace('Bearer ', ''), {
-      auth: { persistSession: false },
-    });
-    const { data: { user }, error: userErr } = await userDb.auth.getUser();
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userErr } = await db.auth.getUser(token);
     if (userErr || !user) return new Response('Unauthorized', { status: 401, headers: CORS });
 
     const { data: subs } = await db
