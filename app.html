@@ -1480,8 +1480,9 @@
       await db.from('push_subscriptions').upsert({
         user_id: currentUser.id,
         haushalt_id: currentHaushalt.id,
+        endpoint: sub.endpoint,
         subscription_json: JSON.stringify(sub),
-      }, { onConflict: 'user_id' });
+      }, { onConflict: 'endpoint' });
     } catch(e) {
       console.error('Push subscribe error:', e);
     }
