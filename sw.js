@@ -1,3 +1,4 @@
+// v3 – push handler aktiv
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => {
   e.waitUntil(

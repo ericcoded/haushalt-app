@@ -1526,6 +1526,7 @@
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
     if (VAPID_PUBLIC_KEY === 'HIER_VAPID_PUBLIC_KEY_EINTRAGEN') return;
     const reg = await navigator.serviceWorker.register('/sw.js');
+    await reg.update(); // Zwingt Chrome, neue SW-Version zu laden
     if (Notification.permission === 'granted') {
       let sub = await reg.pushManager.getSubscription();
       if (!sub) sub = await reg.pushManager.subscribe({
