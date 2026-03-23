@@ -19,11 +19,19 @@ function bytesToB64u(bytes: Uint8Array): string {
   return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
 
+// Manuelle HKDF-Implementierung (identisch zu web-push npm v3.6.7)
+// Extract: PRK = HMAC-SHA256(salt, ikm)
+// Expand:  T(1) = HMAC-SHA256(PRK, info || 0x01)
+async function hmacSha256(key: Uint8Array, data: Uint8Array): Promise<Uint8Array> {
+  const k = await crypto.subtle.importKey('raw', key, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return new Uint8Array(await crypto.subtle.sign('HMAC', k, data));
+}
+
 async function hkdf(salt: Uint8Array, ikm: Uint8Array, info: Uint8Array, length: number): Promise<Uint8Array> {
-  const key = await crypto.subtle.importKey('raw', ikm, 'HKDF', false, ['deriveBits']);
-  return new Uint8Array(await crypto.subtle.deriveBits(
-    { name: 'HKDF', hash: 'SHA-256', salt, info }, key, length * 8
-  ));
+  const prk = await hmacSha256(salt, ikm);
+  const infoWithCounter = new Uint8Array([...info, 0x01]);
+  const t = await hmacSha256(prk, infoWithCounter);
+  return t.slice(0, length);
 }
 
 // ── VAPID JWT (ES256) ──────────────────────────────────────────
@@ -61,8 +69,8 @@ async function encryptPayload(p256dhB64u: string, authB64u: string, payload: str
   const uaPubKey    = await crypto.subtle.importKey('raw', uaPublic, { name: 'ECDH', namedCurve: 'P-256' }, false, []);
   const ecdhSecret  = new Uint8Array(await crypto.subtle.deriveBits({ name: 'ECDH', public: uaPubKey }, asKP.privateKey, 256));
 
-  // RFC 8291: IKM = HKDF(salt=authSecret, ikm=ecdhSecret, info="WebPush: info\0" || uaPublic || asPublic, L=32)
-  // KEIN trailing 0x01 – Web Crypto's HKDF fügt den Counter-Byte intern hinzu
+  // RFC 8291: IKM info = "WebPush: info\0" || uaPublic || asPublic
+  // hkdf() hängt selbst 0x01 an → T(1) = HMAC(PRK, info || 0x01)
   const webpushInfo = new Uint8Array([
     ...new TextEncoder().encode('WebPush: info\x00'),
     ...uaPublic, ...asPublic,
