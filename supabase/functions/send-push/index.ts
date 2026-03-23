@@ -1,17 +1,10 @@
 // Supabase Edge Function: send-push
 // Läuft als Cron (jede Minute) – sendet Web Push für fällige Routinen.
-// Verwendet nur Web Crypto API (kein npm/esm dependency für push).
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import webpush from 'npm:web-push@3.6.7';
 
 // ── Hilfsfunktionen ────────────────────────────────────────────
-
-function b64uToBytes(b64u: string): Uint8Array {
-  // Strip whitespace + existing padding, convert to standard base64, re-pad
-  const b64 = b64u.trim().replace(/-/g, '+').replace(/_/g, '/').replace(/=/g, '');
-  const padded = b64 + '='.repeat((4 - b64.length % 4) % 4);
-  return Uint8Array.from(atob(padded), c => c.charCodeAt(0));
-}
 
 function bytesToB64u(bytes: Uint8Array): string {
   let str = '';
@@ -19,22 +12,13 @@ function bytesToB64u(bytes: Uint8Array): string {
   return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
 
-// Manuelle HKDF-Implementierung (identisch zu web-push npm v3.6.7)
-// Extract: PRK = HMAC-SHA256(salt, ikm)
-// Expand:  T(1) = HMAC-SHA256(PRK, info || 0x01)
-async function hmacSha256(key: Uint8Array, data: Uint8Array): Promise<Uint8Array> {
-  const k = await crypto.subtle.importKey('raw', key, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-  return new Uint8Array(await crypto.subtle.sign('HMAC', k, data));
+function b64uToBytes(b64u: string): Uint8Array {
+  const b64 = b64u.trim().replace(/-/g, '+').replace(/_/g, '/').replace(/=/g, '');
+  const padded = b64 + '='.repeat((4 - b64.length % 4) % 4);
+  return Uint8Array.from(atob(padded), c => c.charCodeAt(0));
 }
 
-async function hkdf(salt: Uint8Array, ikm: Uint8Array, info: Uint8Array, length: number): Promise<Uint8Array> {
-  const prk = await hmacSha256(salt, ikm);
-  const infoWithCounter = new Uint8Array([...info, 0x01]);
-  const t = await hmacSha256(prk, infoWithCounter);
-  return t.slice(0, length);
-}
-
-// ── VAPID JWT (ES256) ──────────────────────────────────────────
+// ── VAPID JWT (ES256) – eigene Implementierung via JWK (kein PKCS8) ──
 
 async function createVapidJWT(audience: string, subject: string, privKeyB64u: string, pubKeyB64u: string): Promise<string> {
   const te = new TextEncoder();
@@ -42,57 +26,14 @@ async function createVapidJWT(audience: string, subject: string, privKeyB64u: st
   const now     = Math.floor(Date.now() / 1000);
   const payload = bytesToB64u(te.encode(JSON.stringify({ aud: audience, exp: now + 43200, sub: subject })));
 
-  // Öffentlichen Key (04 || x || y) in x und y aufteilen für JWK-Import
-  const pubBytes = b64uToBytes(pubKeyB64u); // 65 bytes: 04 + 32 + 32
+  const pubBytes = b64uToBytes(pubKeyB64u);
   const x = bytesToB64u(pubBytes.slice(1, 33));
   const y = bytesToB64u(pubBytes.slice(33, 65));
 
-  // JWK-Format statt PKCS8 – zuverlässiger in Deno
   const jwk = { kty: 'EC', crv: 'P-256', d: privKeyB64u, x, y };
   const sigKey = await crypto.subtle.importKey('jwk', jwk, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
   const sig    = await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, sigKey, te.encode(`${header}.${payload}`));
   return `${header}.${payload}.${bytesToB64u(new Uint8Array(sig))}`;
-}
-
-// ── Web Push Payload Encryption (RFC 8291 / aes128gcm) ────────
-
-async function encryptPayload(p256dhB64u: string, authB64u: string, payload: string): Promise<Uint8Array> {
-  const uaPublic   = b64uToBytes(p256dhB64u);  // 65 bytes
-  const authSecret = b64uToBytes(authB64u);     // 16 bytes
-  const plaintext  = new TextEncoder().encode(payload);
-
-  // Ephemeral P-256 key pair
-  const asKP = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']);
-  const asPublic = new Uint8Array(await crypto.subtle.exportKey('raw', asKP.publicKey)); // 65 bytes
-
-  // ECDH
-  const uaPubKey    = await crypto.subtle.importKey('raw', uaPublic, { name: 'ECDH', namedCurve: 'P-256' }, false, []);
-  const ecdhSecret  = new Uint8Array(await crypto.subtle.deriveBits({ name: 'ECDH', public: uaPubKey }, asKP.privateKey, 256));
-
-  // RFC 8291: IKM info = "WebPush: info\0" || uaPublic || asPublic
-  // hkdf() hängt selbst 0x01 an → T(1) = HMAC(PRK, info || 0x01)
-  const webpushInfo = new Uint8Array([
-    ...new TextEncoder().encode('WebPush: info\x00'),
-    ...uaPublic, ...asPublic,
-  ]);
-  const ikm = await hkdf(authSecret, ecdhSecret, webpushInfo, 32);
-
-  // RFC 8188: CEK + nonce via HKDF
-  const salt     = crypto.getRandomValues(new Uint8Array(16));
-  const cekInfo  = new TextEncoder().encode('Content-Encoding: aes128gcm\x00\x01');
-  const nonceInfo = new TextEncoder().encode('Content-Encoding: nonce\x00\x01');
-  const cek   = await hkdf(salt, ikm, cekInfo,   16);
-  const nonce = await hkdf(salt, ikm, nonceInfo, 12);
-
-  // AES-128-GCM encrypt (payload + 0x02 delimiter)
-  const aesKey    = await crypto.subtle.importKey('raw', cek, 'AES-GCM', false, ['encrypt']);
-  const padded    = new Uint8Array([...plaintext, 0x02]);
-  const ciphertext = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce }, aesKey, padded));
-
-  // RFC 8188 body: salt(16) + rs(4 BE) + idlen(1=65) + asPublic(65) + ciphertext
-  const rs = new Uint8Array(4);
-  new DataView(rs.buffer).setUint32(0, 4096, false);
-  return new Uint8Array([...salt, ...rs, 65, ...asPublic, ...ciphertext]);
 }
 
 // ── Push senden ───────────────────────────────────────────────
@@ -101,27 +42,35 @@ async function sendPush(
   endpoint: string, p256dh: string, auth: string,
   payload: string | null, vapidPub: string, vapidPriv: string, vapidSub: string
 ): Promise<void> {
-  const audience = (() => { const u = new URL(endpoint); return `${u.protocol}//${u.host}`; })();
-  const jwt = await createVapidJWT(audience, vapidSub, vapidPriv, vapidPub);
+  const domain = new URL(endpoint).hostname;
 
-  const headers: Record<string, string> = {
-    'Authorization': `vapid t=${jwt},k=${vapidPub}`,
-    'TTL': '86400',
-    'Urgency': 'high',
-  };
-
-  let body: Uint8Array | undefined;
-  if (payload !== null) {
-    body = await encryptPayload(p256dh, auth, payload);
-    headers['Content-Type'] = 'application/octet-stream';
-    headers['Content-Encoding'] = 'aes128gcm';
+  if (payload === null) {
+    // Leerer Push: eigene VAPID JWT + kein Body
+    const audience = (() => { const u = new URL(endpoint); return `${u.protocol}//${u.host}`; })();
+    const jwt = await createVapidJWT(audience, vapidSub, vapidPriv, vapidPub);
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Authorization': `vapid t=${jwt},k=${vapidPub}`,
+        'TTL': '86400',
+        'Urgency': 'high',
+      },
+    });
+    const text = await res.text();
+    console.log(`Empty push to ${domain}: ${res.status} ${text}`);
+    if (!res.ok) throw new Error(`Push HTTP ${res.status}: ${text}`);
+    return;
   }
 
-  console.log(`Sending push (payload=${payload !== null ? 'yes' : 'empty'}) to ${new URL(endpoint).hostname}...`);
-  const res = await fetch(endpoint, { method: 'POST', headers, body });
-  const resText = await res.text();
-  console.log(`Response: ${res.status}, body: "${resText}"`);
-  if (!res.ok) throw new Error(`Push HTTP ${res.status}: ${resText}`);
+  // Verschlüsselter Push via npm:web-push (bewährte Encryption)
+  webpush.setVapidDetails(vapidSub, vapidPub, vapidPriv);
+  const sub = { endpoint, keys: { p256dh, auth } };
+  console.log(`Sending to ${domain}...`);
+  const result = await webpush.sendNotification(sub, payload, {
+    TTL: 86400,
+    urgency: 'high',
+  });
+  console.log(`✓ sent to ${domain}: ${result.statusCode}`);
 }
 
 // ── Main ──────────────────────────────────────────────────────
@@ -157,7 +106,6 @@ Deno.serve(async (req) => {
     const domain = new URL(sub.endpoint).hostname;
     try {
       await sendPush(sub.endpoint, sub.keys.p256dh, sub.keys.auth, payload, vapidPublicKey, vapidPrivateKey, vapidSubject);
-      console.log(`✓ test push sent to ${domain}`);
       return new Response(`Test: sent to ${domain}`, { status: 200, headers: CORS });
     } catch(e) {
       const err = e as Error;
@@ -169,7 +117,7 @@ Deno.serve(async (req) => {
     }
   }
 
-  // Aktuelle Uhrzeit in Europe/Berlin
+  // ── GET: Cron – fällige Routinen senden ───────────────────────
   const now  = new Date();
   const fmt  = new Intl.DateTimeFormat('de-DE', {
     timeZone: 'Europe/Berlin',
@@ -182,7 +130,6 @@ Deno.serve(async (req) => {
 
   console.log(`Berlin time: ${currentTime}, day: ${currentDay}`);
 
-  // Fällige Routinen laden
   const { data: routinen, error } = await db
     .from('routinen')
     .select('id, titel, zugewiesen_an, haushalt_id, uhrzeit, wiederholung_tage')
@@ -192,7 +139,6 @@ Deno.serve(async (req) => {
 
   const faellig = (routinen ?? []).filter(r => r.uhrzeit?.slice(0, 5) === currentTime);
   console.log(`Routinen found: ${routinen?.length ?? 0}, faellig: ${faellig.length}`);
-  routinen?.forEach(r => console.log(`  Routine "${r.titel}": uhrzeit="${r.uhrzeit}" → slice="${r.uhrzeit?.slice(0,5)}" === currentTime="${currentTime}"? ${r.uhrzeit?.slice(0,5) === currentTime}`));
 
   if (!faellig.length) return new Response('OK – keine fälligen Routinen', { status: 200 });
 
@@ -213,14 +159,12 @@ Deno.serve(async (req) => {
       const sub = JSON.parse(subscription_json);
       const domain = new URL(sub.endpoint).hostname;
       try {
-        console.log(`Sending to ${domain}...`);
         await sendPush(sub.endpoint, sub.keys.p256dh, sub.keys.auth, payload, vapidPublicKey, vapidPrivateKey, vapidSubject);
         console.log(`✓ sent to ${domain}`);
         sent++;
       } catch(e) {
         const err = e as Error;
         console.error(`✗ failed ${domain}: ${err.message}`);
-        // 410 = Subscription abgelaufen → aus DB löschen
         if (err.message.includes('410')) {
           await db.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
           console.log(`Deleted stale subscription for ${domain}`);
