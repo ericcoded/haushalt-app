@@ -441,6 +441,7 @@
     <h1 class="login-title">Unser Haushalt</h1>
     <p class="login-sub">Einfach E-Mail eingeben — egal ob neu oder schon dabei.<br>Kein Passwort nötig.</p>
     <div class="login-card" id="login-form-wrap">
+      <div id="login-error" style="display:none;background:#fcebeb;border:1px solid #e24b4a;border-radius:8px;padding:10px 12px;font-size:13px;color:#a32d2d;margin-bottom:12px;line-height:1.4"></div>
       <label class="login-label">Deine E-Mail-Adresse</label>
       <input type="email" class="login-input" id="login-email" placeholder="du@beispiel.de" />
       <button class="login-btn" id="login-btn" onclick="sendMagicLink()">Anmelden / Registrieren ✨</button>
@@ -849,11 +850,15 @@
     return '📦';
   }
 
-  function showToast(msg) {
+  function showToast(msg, isError = false) {
     const t = document.getElementById('toast');
-    t.textContent = msg; t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2500);
+    t.textContent = msg;
+    t.style.background = isError ? '#c0392b' : '#3C3489';
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), isError ? 4000 : 2500);
   }
+
+  function showError(msg) { showToast('⚠️ ' + msg, true); }
 
   function generateCode() {
     const words = ['HAUS','HOME','KÜCHE','TEAM','NEST','BASE','DUO','ZWEI'];
@@ -982,10 +987,14 @@
     document.getElementById('onboard-overlay').classList.remove('active');
   }
 
-  function setSync(status, text) {
+  function setSync(status, text, retryFn = null) {
     const el = document.getElementById('sync-status');
     el.className = 'sync-indicator ' + status;
-    el.innerHTML = '<span class="sync-dot"></span>' + text;
+    if (status === 'error' && retryFn) {
+      el.innerHTML = `<span class="sync-dot"></span>${text} <button onclick="(${retryFn.toString()})()" style="background:none;border:none;color:var(--c-red);font-size:11px;cursor:pointer;text-decoration:underline;padding:0 0 0 4px">Retry</button>`;
+    } else {
+      el.innerHTML = '<span class="sync-dot"></span>' + text;
+    }
   }
 
   function showScreen(screen) {
@@ -1006,7 +1015,9 @@
     });
     if (error) {
       btn.disabled = false; btn.textContent = 'Magic Link senden ✨';
-      alert('Fehler: ' + error.message);
+      const errEl = document.getElementById('login-error');
+      if (errEl) { errEl.textContent = 'Fehler: ' + error.message; errEl.style.display = 'block'; }
+      else showError(error.message);
     } else {
       document.getElementById('login-form-wrap').style.display = 'none';
       document.getElementById('login-success').style.display = 'block';
@@ -1020,7 +1031,7 @@
       name: 'Unser Haushalt',
       created_by: currentUser.id
     }).select().single();
-    if (error) { alert('Fehler: ' + error.message); return; }
+    if (error) { showError('Haushalt konnte nicht erstellt werden. Bitte versuch es nochmal.'); return; }
     await db.from('haushalt_mitglieder').insert({ haushalt_id: data.id, user_id: currentUser.id, email: currentUser.email });
     currentHaushalt = data;
     startApp();
@@ -1030,7 +1041,7 @@
     const code = document.getElementById('join-code').value.trim().toUpperCase();
     if (!code) return;
     const { data, error } = await db.from('haushalte').select('*').eq('code', code).single();
-    if (error || !data) { alert('Code nicht gefunden. Bitte prüfe den Code.'); return; }
+    if (error || !data) { showError('Code nicht gefunden — bitte prüf die Eingabe.'); return; }
     await db.from('haushalt_mitglieder').insert({ haushalt_id: data.id, user_id: currentUser.id, email: currentUser.email });
     currentHaushalt = data;
     startApp();
@@ -1146,10 +1157,23 @@
     if (!currentHaushalt) return;
     const { data, error } = await db.from('haushalt_items')
       .select('*').eq('haushalt_id', currentHaushalt.id).order('created_at');
-    if (error) { setSync('error', 'Verbindungsfehler ✕'); return; }
+    if (error) { setSync('error', 'Verbindungsfehler ✕', loadItems); return; }
     items = data;
     setSync('', 'Synchronisiert ✓');
     render();
+  }
+
+  // Zentraler Wrapper für alle Schreiboperationen
+  async function dbWrite(fn, label = 'Speichert...') {
+    setSync('syncing', label);
+    try {
+      await fn();
+      setSync('', 'Synchronisiert ✓');
+    } catch(e) {
+      console.error('DB write error:', e);
+      setSync('error', 'Nicht gespeichert ✕', () => dbWrite(fn, label));
+      showError('Verbindungsfehler — bitte versuche es nochmal.');
+    }
   }
 
   function subscribeRealtime() {
@@ -1201,33 +1225,33 @@
     const kosten = kostenRaw ? parseFloat(kostenRaw) : null;
     const link = document.getElementById('aufgabe-link').value.trim() || null;
     const notizen = document.getElementById('aufgabe-notizen').value.trim() || null;
-    setSync('syncing', 'Speichert...');
-    await db.from('aufgaben').insert({
-      titel, prioritaet: prio, faellig_am: faellig,
-      zugewiesen_an: zugewiesen, zeitaufwand, kosten, link, notizen,
-      status: 'offen', haushalt_id: currentHaushalt.id,
-      erstellt_von: currentUser.id
+    await dbWrite(async () => {
+      await db.from('aufgaben').insert({
+        titel, prioritaet: prio, faellig_am: faellig,
+        zugewiesen_an: zugewiesen, zeitaufwand, kosten, link, notizen,
+        status: 'offen', haushalt_id: currentHaushalt.id,
+        erstellt_von: currentUser.id
+      });
+      ['aufgabe-titel','aufgabe-faellig','aufgabe-zugewiesen','aufgabe-zeitaufwand','aufgabe-kosten','aufgabe-link','aufgabe-notizen'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      await loadAufgaben();
     });
-    ['aufgabe-titel','aufgabe-faellig','aufgabe-zugewiesen','aufgabe-zeitaufwand','aufgabe-kosten','aufgabe-link','aufgabe-notizen'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.value = '';
-    });
-    await loadAufgaben();
-    setSync('', 'Synchronisiert ✓');
   }
 
   async function updateAufgabe(id, field, value) {
-    setSync('syncing', 'Speichert...');
-    await db.from('aufgaben').update({ [field]: value }).eq('id', id);
-    await loadAufgaben();
-    setSync('', 'Synchronisiert ✓');
+    await dbWrite(async () => {
+      await db.from('aufgaben').update({ [field]: value }).eq('id', id);
+      await loadAufgaben();
+    });
   }
 
   async function delAufgabe(id) {
-    setSync('syncing', 'Löscht...');
-    await db.from('aufgaben').delete().eq('id', id);
-    await loadAufgaben();
-    setSync('', 'Synchronisiert ✓');
+    await dbWrite(async () => {
+      await db.from('aufgaben').delete().eq('id', id);
+      await loadAufgaben();
+    }, 'Löscht...');
   }
 
   function esc(s) {
@@ -1256,21 +1280,21 @@
     const titel = document.getElementById('edit-titel').value.trim();
     if (!titel) return;
     const kostenRaw = document.getElementById('edit-kosten').value;
-    setSync('syncing', 'Speichert...');
-    await db.from('aufgaben').update({
-      titel,
-      prioritaet: parseInt(document.getElementById('edit-prio').value),
-      status: document.getElementById('edit-status').value,
-      faellig_am: document.getElementById('edit-faellig').value || null,
-      zugewiesen_an: document.getElementById('edit-zugewiesen').value.trim() || null,
-      zeitaufwand: document.getElementById('edit-zeitaufwand').value.trim() || null,
-      kosten: kostenRaw ? parseFloat(kostenRaw) : null,
-      link: document.getElementById('edit-link').value.trim() || null,
-      notizen: document.getElementById('edit-notizen').value.trim() || null,
-    }).eq('id', id);
-    aufgabenEditId = null;
-    await loadAufgaben();
-    setSync('', 'Synchronisiert ✓');
+    await dbWrite(async () => {
+      await db.from('aufgaben').update({
+        titel,
+        prioritaet: parseInt(document.getElementById('edit-prio').value),
+        status: document.getElementById('edit-status').value,
+        faellig_am: document.getElementById('edit-faellig').value || null,
+        zugewiesen_an: document.getElementById('edit-zugewiesen').value.trim() || null,
+        zeitaufwand: document.getElementById('edit-zeitaufwand').value.trim() || null,
+        kosten: kostenRaw ? parseFloat(kostenRaw) : null,
+        link: document.getElementById('edit-link').value.trim() || null,
+        notizen: document.getElementById('edit-notizen').value.trim() || null,
+      }).eq('id', id);
+      aufgabenEditId = null;
+      await loadAufgaben();
+    });
   }
 
   function renderAufgaben() {
@@ -1364,15 +1388,16 @@
 
   async function addStarterItems() {
     document.getElementById('starter-banner').style.display = 'none';
-    setSync('syncing', 'Füge Artikel hinzu...');
-    const existing = items.filter(i => i.typ === 'vorrat').map(i => i.name.toLowerCase());
-    const toAdd = STARTER.filter(s => !existing.includes(s.name.toLowerCase()));
-    if (toAdd.length > 0) {
-      await db.from('haushalt_items').insert(
-        toAdd.map(s => ({ name: s.name, kategorie: s.kategorie, status: 'ok', typ: 'vorrat', source: 'vorrat', haushalt_id: currentHaushalt.id }))
-      );
-    }
-    await loadItems();
+    await dbWrite(async () => {
+      const existing = items.filter(i => i.typ === 'vorrat').map(i => i.name.toLowerCase());
+      const toAdd = STARTER.filter(s => !existing.includes(s.name.toLowerCase()));
+      if (toAdd.length > 0) {
+        await db.from('haushalt_items').insert(
+          toAdd.map(s => ({ name: s.name, kategorie: s.kategorie, status: 'ok', typ: 'vorrat', source: 'vorrat', haushalt_id: currentHaushalt.id }))
+        );
+      }
+      await loadItems();
+    }, 'Füge Artikel hinzu...');
   }
 
   async function addVorrat() {
@@ -1380,73 +1405,73 @@
     const kat = document.getElementById('vorrat-kat');
     const name = inp.value.trim(); if (!name) return;
     inp.value = '';
-    setSync('syncing', 'Speichert...');
-    await db.from('haushalt_items').insert({ name, kategorie: kat.value, status: 'ok', typ: 'vorrat', source: 'vorrat', haushalt_id: currentHaushalt.id });
-    await loadItems();
+    await dbWrite(async () => {
+      await db.from('haushalt_items').insert({ name, kategorie: kat.value, status: 'ok', typ: 'vorrat', source: 'vorrat', haushalt_id: currentHaushalt.id });
+      await loadItems();
+    });
   }
 
   async function setStatus(id, status) {
     const item = items.find(i => i.id === id); if (!item) return;
     const prev = item.status;
-    setSync('syncing', 'Speichert...');
-    await db.from('haushalt_items').update({ status }).eq('id', id);
-    if ((status === 'low' || status === 'out') && prev === 'ok') {
-      const already = items.find(i => i.typ === 'einkauf' && i.name.toLowerCase() === item.name.toLowerCase() && i.source === 'vorrat');
-      if (!already) await db.from('haushalt_items').insert({ name: item.name, kategorie: item.kategorie || 'Sonstiges', status: 'ok', typ: 'einkauf', source: 'vorrat', bought: false, haushalt_id: currentHaushalt.id });
-    }
-    if (status === 'ok' && (prev === 'low' || prev === 'out')) {
-      await db.from('haushalt_items').delete().match({ typ: 'einkauf', name: item.name, source: 'vorrat', haushalt_id: currentHaushalt.id });
-    }
-    await loadItems();
+    await dbWrite(async () => {
+      await db.from('haushalt_items').update({ status }).eq('id', id);
+      if ((status === 'low' || status === 'out') && prev === 'ok') {
+        const already = items.find(i => i.typ === 'einkauf' && i.name.toLowerCase() === item.name.toLowerCase() && i.source === 'vorrat');
+        if (!already) await db.from('haushalt_items').insert({ name: item.name, kategorie: item.kategorie || 'Sonstiges', status: 'ok', typ: 'einkauf', source: 'vorrat', bought: false, haushalt_id: currentHaushalt.id });
+      }
+      if (status === 'ok' && (prev === 'low' || prev === 'out')) {
+        await db.from('haushalt_items').delete().match({ typ: 'einkauf', name: item.name, source: 'vorrat', haushalt_id: currentHaushalt.id });
+      }
+      await loadItems();
+    });
   }
 
   async function delItem(id) {
     const item = items.find(i => i.id === id); if (!item) return;
-    setSync('syncing', 'Löscht...');
-    await db.from('haushalt_items').delete().eq('id', id);
-    if (item.typ === 'vorrat') await db.from('haushalt_items').delete().match({ typ: 'einkauf', name: item.name, source: 'vorrat', haushalt_id: currentHaushalt.id });
-    await loadItems();
+    await dbWrite(async () => {
+      await db.from('haushalt_items').delete().eq('id', id);
+      if (item.typ === 'vorrat') await db.from('haushalt_items').delete().match({ typ: 'einkauf', name: item.name, source: 'vorrat', haushalt_id: currentHaushalt.id });
+      await loadItems();
+    }, 'Löscht...');
   }
 
   async function toggleBought(id) {
     const item = items.find(i => i.id === id); if (!item) return;
     const bought = !item.bought;
-    setSync('syncing', 'Speichert...');
-    if (bought) {
-      // bought + buy_count in einem einzigen Update (verhindert Race Condition)
-      await db.from('haushalt_items').update({ bought, buy_count: (item.buy_count || 0) + 1 }).eq('id', id);
-      if (item.source === 'vorrat') {
-        // buy_count auch auf dem zugehörigen Vorrat-Item erhöhen — das ist die Quelle für "Häufig gekauft"
-        const vorratItem = items.find(i => i.typ === 'vorrat' && i.name.toLowerCase() === item.name.toLowerCase());
-        if (vorratItem) await db.from('haushalt_items').update({ buy_count: (vorratItem.buy_count || 0) + 1 }).eq('id', vorratItem.id);
-        await db.from('haushalt_items').update({ status: 'ok' }).eq('typ', 'vorrat').eq('name', item.name).eq('haushalt_id', currentHaushalt.id);
+    await dbWrite(async () => {
+      if (bought) {
+        await db.from('haushalt_items').update({ bought, buy_count: (item.buy_count || 0) + 1 }).eq('id', id);
+        if (item.source === 'vorrat') {
+          const vorratItem = items.find(i => i.typ === 'vorrat' && i.name.toLowerCase() === item.name.toLowerCase());
+          if (vorratItem) await db.from('haushalt_items').update({ buy_count: (vorratItem.buy_count || 0) + 1 }).eq('id', vorratItem.id);
+          await db.from('haushalt_items').update({ status: 'ok' }).eq('typ', 'vorrat').eq('name', item.name).eq('haushalt_id', currentHaushalt.id);
+        }
+      } else {
+        await db.from('haushalt_items').update({ bought }).eq('id', id);
       }
-    } else {
-      await db.from('haushalt_items').update({ bought }).eq('id', id);
-    }
-    await loadItems();
+      await loadItems();
+    });
   }
 
   async function clearBought() {
-    setSync('syncing', 'Speichert...');
     const bought = items.filter(i => i.typ === 'einkauf' && i.bought);
-    for (const item of bought) {
-      if (item.source === 'manuell' && (item.buy_count || 0) > 0) {
-        // Gibt es schon einen unsichtbaren Zähler für diesen Namen?
-        const counter = items.find(i => i.status === 'counter' && i.name.toLowerCase() === item.name.toLowerCase() && i.id !== item.id);
-        if (counter) {
-          // buy_count addieren und dieses Item löschen
-          await db.from('haushalt_items').update({ buy_count: (counter.buy_count || 0) + (item.buy_count || 0) }).eq('id', counter.id);
-          await db.from('haushalt_items').delete().eq('id', item.id);
+    await dbWrite(async () => {
+      for (const item of bought) {
+        if (item.source === 'manuell' && (item.buy_count || 0) > 0) {
+          const counter = items.find(i => i.status === 'counter' && i.name.toLowerCase() === item.name.toLowerCase() && i.id !== item.id);
+          if (counter) {
+            await db.from('haushalt_items').update({ buy_count: (counter.buy_count || 0) + (item.buy_count || 0) }).eq('id', counter.id);
+            await db.from('haushalt_items').delete().eq('id', item.id);
+          } else {
+            await db.from('haushalt_items').update({ bought: false, status: 'counter' }).eq('id', item.id);
+          }
         } else {
-          // Als unsichtbaren Zähler behalten (status='counter' → wird nicht angezeigt)
-          await db.from('haushalt_items').update({ bought: false, status: 'counter' }).eq('id', item.id);
+          await db.from('haushalt_items').delete().eq('id', item.id);
         }
-      } else {
-        await db.from('haushalt_items').delete().eq('id', item.id);
       }
-    }
-    await loadItems();
+      await loadItems();
+    }, 'Bereinigt...');
   }
 
   async function addManual() {
@@ -1456,15 +1481,15 @@
     const menge = mengeInp.value.trim() || null;
     inp.value = '';
     mengeInp.value = '';
-    setSync('syncing', 'Speichert...');
-    // Gibt es einen unsichtbaren Zähler? Dann wiederverwenden statt neu anlegen
-    const counter = items.find(i => i.status === 'counter' && i.name.toLowerCase() === name.toLowerCase());
-    if (counter) {
-      await db.from('haushalt_items').update({ bought: false, status: 'ok', menge }).eq('id', counter.id);
-    } else {
-      await db.from('haushalt_items').insert({ name, menge, kategorie: 'Sonstiges', status: 'ok', typ: 'einkauf', source: 'manuell', bought: false, haushalt_id: currentHaushalt.id });
-    }
-    await loadItems();
+    await dbWrite(async () => {
+      const counter = items.find(i => i.status === 'counter' && i.name.toLowerCase() === name.toLowerCase());
+      if (counter) {
+        await db.from('haushalt_items').update({ bought: false, status: 'ok', menge }).eq('id', counter.id);
+      } else {
+        await db.from('haushalt_items').insert({ name, menge, kategorie: 'Sonstiges', status: 'ok', typ: 'einkauf', source: 'manuell', bought: false, haushalt_id: currentHaushalt.id });
+      }
+      await loadItems();
+    });
   }
 
   function renderFrequently() {
@@ -1499,32 +1524,32 @@
   }
 
   async function addFromFrequently(name, kategorie) {
-    setSync('syncing', 'Speichert...');
-    const vorratItem = items.find(i => i.typ === 'vorrat' && i.name.toLowerCase() === name.toLowerCase());
-    if (vorratItem) {
-      // Vorrats-Item → als source='vorrat' auf die Einkaufsliste (wie bei "~" / "✕")
-      const already = items.find(i => i.typ === 'einkauf' && i.source === 'vorrat' && i.name.toLowerCase() === name.toLowerCase());
-      if (!already) await db.from('haushalt_items').insert({ name: vorratItem.name, kategorie: vorratItem.kategorie || kategorie, status: 'ok', typ: 'einkauf', source: 'vorrat', bought: false, haushalt_id: currentHaushalt.id });
-    } else {
-      // Manuell-Counter → wiederverwenden oder neu anlegen
-      const counter = items.find(i => i.status === 'counter' && i.name.toLowerCase() === name.toLowerCase());
-      if (counter) {
-        await db.from('haushalt_items').update({ bought: false, status: 'ok', menge: null }).eq('id', counter.id);
+    await dbWrite(async () => {
+      const vorratItem = items.find(i => i.typ === 'vorrat' && i.name.toLowerCase() === name.toLowerCase());
+      if (vorratItem) {
+        const already = items.find(i => i.typ === 'einkauf' && i.source === 'vorrat' && i.name.toLowerCase() === name.toLowerCase());
+        if (!already) await db.from('haushalt_items').insert({ name: vorratItem.name, kategorie: vorratItem.kategorie || kategorie, status: 'ok', typ: 'einkauf', source: 'vorrat', bought: false, haushalt_id: currentHaushalt.id });
       } else {
-        await db.from('haushalt_items').insert({ name, kategorie, status: 'ok', typ: 'einkauf', source: 'manuell', bought: false, haushalt_id: currentHaushalt.id });
+        const counter = items.find(i => i.status === 'counter' && i.name.toLowerCase() === name.toLowerCase());
+        if (counter) {
+          await db.from('haushalt_items').update({ bought: false, status: 'ok', menge: null }).eq('id', counter.id);
+        } else {
+          await db.from('haushalt_items').insert({ name, kategorie, status: 'ok', typ: 'einkauf', source: 'manuell', bought: false, haushalt_id: currentHaushalt.id });
+        }
       }
-    }
-    await loadItems();
+      await loadItems();
+    });
   }
 
   async function resetFreqItem(id, typ) {
-    setSync('syncing', 'Löscht...');
-    if (typ === 'vorrat') {
-      await db.from('haushalt_items').update({ buy_count: 0 }).eq('id', id);
-    } else {
-      await db.from('haushalt_items').delete().eq('id', id);
-    }
-    await loadItems();
+    await dbWrite(async () => {
+      if (typ === 'vorrat') {
+        await db.from('haushalt_items').update({ buy_count: 0 }).eq('id', id);
+      } else {
+        await db.from('haushalt_items').delete().eq('id', id);
+      }
+      await loadItems();
+    }, 'Löscht...');
   }
 
   function setFilter(kat) { activeFilter = kat; render(); }
@@ -1620,19 +1645,20 @@
 
   async function delShopItem(id) {
     const item = items.find(i => i.id === id); if (!item) return;
-    setSync('syncing', 'Löscht...');
-    if (item.source === 'manuell' && (item.buy_count || 0) > 0) {
-      const counter = items.find(i => i.status === 'counter' && i.name.toLowerCase() === item.name.toLowerCase() && i.id !== id);
-      if (counter) {
-        await db.from('haushalt_items').update({ buy_count: (counter.buy_count || 0) + (item.buy_count || 0) }).eq('id', counter.id);
-        await db.from('haushalt_items').delete().eq('id', id);
+    await dbWrite(async () => {
+      if (item.source === 'manuell' && (item.buy_count || 0) > 0) {
+        const counter = items.find(i => i.status === 'counter' && i.name.toLowerCase() === item.name.toLowerCase() && i.id !== id);
+        if (counter) {
+          await db.from('haushalt_items').update({ buy_count: (counter.buy_count || 0) + (item.buy_count || 0) }).eq('id', counter.id);
+          await db.from('haushalt_items').delete().eq('id', id);
+        } else {
+          await db.from('haushalt_items').update({ status: 'counter', bought: false }).eq('id', id);
+        }
       } else {
-        await db.from('haushalt_items').update({ status: 'counter', bought: false }).eq('id', id);
+        await db.from('haushalt_items').delete().eq('id', id);
       }
-    } else {
-      await db.from('haushalt_items').delete().eq('id', id);
-    }
-    await loadItems();
+      await loadItems();
+    }, 'Löscht...');
   }
 
   function shopItem(i) {
@@ -1694,29 +1720,29 @@
     if (selectedRoutineTage.size === 0) { showToast('Bitte mindestens einen Wochentag wählen'); return; }
     const zugewiesen_an = document.getElementById('routine-zugewiesen').value || null;
     const uhrzeit = document.getElementById('routine-uhrzeit').value || '08:00';
-    setSync('syncing', 'Speichert...');
-    await db.from('routinen').insert({
-      titel, zugewiesen_an, uhrzeit,
-      wiederholung_tage: [...selectedRoutineTage],
-      haushalt_id: currentHaushalt.id,
-      erstellt_von: currentUser.id,
+    await dbWrite(async () => {
+      await db.from('routinen').insert({
+        titel, zugewiesen_an, uhrzeit,
+        wiederholung_tage: [...selectedRoutineTage],
+        haushalt_id: currentHaushalt.id,
+        erstellt_von: currentUser.id,
+      });
+      document.getElementById('routine-titel').value = '';
+      document.getElementById('routine-zugewiesen').value = '';
+      populateMemberSelects();
+      document.getElementById('routine-uhrzeit').value = '08:00';
+      selectedRoutineTage.clear();
+      routineFormOpen = false;
+      document.getElementById('routine-form').style.display = 'none';
+      await loadRoutinen();
     });
-    document.getElementById('routine-titel').value = '';
-    document.getElementById('routine-zugewiesen').value = '';
-    populateMemberSelects();
-    document.getElementById('routine-uhrzeit').value = '08:00';
-    selectedRoutineTage.clear();
-    routineFormOpen = false;
-    document.getElementById('routine-form').style.display = 'none';
-    await loadRoutinen();
-    setSync('', 'Synchronisiert ✓');
   }
 
   async function delRoutine(id) {
-    setSync('syncing', 'Löscht...');
-    await db.from('routinen').delete().eq('id', id);
-    await loadRoutinen();
-    setSync('', 'Synchronisiert ✓');
+    await dbWrite(async () => {
+      await db.from('routinen').delete().eq('id', id);
+      await loadRoutinen();
+    }, 'Löscht...');
   }
 
   function editRoutine(id) {
@@ -1744,17 +1770,17 @@
     const titel = document.getElementById('redit-titel').value.trim();
     if (!titel) return;
     if (editingRoutineTage.size === 0) { showToast('Bitte mindestens einen Wochentag wählen'); return; }
-    setSync('syncing', 'Speichert...');
-    await db.from('routinen').update({
-      titel,
-      zugewiesen_an: document.getElementById('redit-zugewiesen').value || null,
-      uhrzeit: document.getElementById('redit-uhrzeit').value || '08:00',
-      wiederholung_tage: [...editingRoutineTage],
-    }).eq('id', id);
-    routineEditId = null;
-    editingRoutineTage.clear();
-    await loadRoutinen();
-    setSync('', 'Synchronisiert ✓');
+    await dbWrite(async () => {
+      await db.from('routinen').update({
+        titel,
+        zugewiesen_an: document.getElementById('redit-zugewiesen').value || null,
+        uhrzeit: document.getElementById('redit-uhrzeit').value || '08:00',
+        wiederholung_tage: [...editingRoutineTage],
+      }).eq('id', id);
+      routineEditId = null;
+      editingRoutineTage.clear();
+      await loadRoutinen();
+    });
   }
 
   function renderRoutinen() {
