@@ -2,7 +2,6 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <link rel="canonical" href="https://www.haushaltspro.de/" />
   <meta name="google-site-verification" content="49WNqte7Cz3YJcrJB0d6hO15FElC0VUnEKjPMQ8D0E4" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
@@ -22,8 +21,14 @@
   <meta property="og:locale" content="de_DE" />
   <meta property="og:site_name" content="Haushaltspro" />
 
+  <!-- Open Graph Image (1200×630px empfohlen) -->
+  <meta property="og:image" content="https://www.haushaltspro.de/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+
   <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://www.haushaltspro.de/og-image.png" />
   <meta name="twitter:title" content="Haushaltspro – Gemeinsame Einkaufsliste für Paare" />
   <meta name="twitter:description" content="Vorrat tracken, Einkaufsliste teilen, Aufgaben verwalten – kostenlos und ohne Passwort." />
 
@@ -67,6 +72,8 @@
       --accent: #2D5A3D;
       --accent-light: #E8F0EA;
       --accent2: #C4873A;
+      --app: #7f77dd;       /* App-Lila — verbindet Landing mit App */
+      --app-light: #eeedfe;
       --white: #FEFCF8;
       --radius: 16px;
     }
@@ -108,7 +115,7 @@
       transition: all 0.2s;
       letter-spacing: -0.01em;
     }
-    .nav-cta:hover { background: var(--accent); transform: translateY(-1px); }
+    .nav-cta:hover { background: var(--app); transform: translateY(-1px); }
 
     /* HERO */
     .hero {
@@ -178,38 +185,50 @@
     }
     .btn-ghost:hover { border-color: var(--ink); color: var(--ink); }
 
-    /* HERO VISUAL */
+    /* SOCIAL PROOF */
+    .social-proof {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin-top: 1.5rem;
+      font-size: 13px; color: var(--ink2); font-weight: 300;
+      animation: fadeUp 0.6s ease 0.4s both;
+    }
+    .social-proof strong { color: var(--ink); font-weight: 500; }
+    .social-proof-avatars { font-size: 16px; letter-spacing: -2px; }
+
+    /* HERO VISUAL — Phone Mockup */
     .hero-visual {
       margin-top: 4rem;
-      width: 100%; max-width: 680px;
-      animation: fadeUp 0.8s ease 0.4s both;
+      width: 100%; max-width: 320px;
+      animation: fadeUp 0.8s ease 0.5s both;
     }
-    .mockup {
+    .phone-frame {
+      background: #1a1814;
+      border-radius: 44px;
+      padding: 12px;
+      box-shadow:
+        0 48px 100px rgba(26,24,20,0.22),
+        0 12px 32px rgba(26,24,20,0.12),
+        inset 0 0 0 1.5px rgba(255,255,255,0.08);
+      position: relative;
+    }
+    .phone-notch {
+      width: 80px; height: 20px;
+      background: #1a1814;
+      border-radius: 0 0 12px 12px;
+      margin: 0 auto 6px;
+      position: relative; z-index: 2;
+    }
+    .phone-screen {
       background: var(--white);
-      border-radius: 24px;
-      border: 1px solid rgba(26,24,20,0.08);
+      border-radius: 32px;
       overflow: hidden;
-      box-shadow: 0 32px 80px rgba(26,24,20,0.1), 0 8px 24px rgba(26,24,20,0.06);
     }
-    .mockup-bar {
-      background: var(--bg2);
-      padding: 12px 16px;
-      display: flex; align-items: center; gap: 6px;
-      border-bottom: 1px solid rgba(26,24,20,0.06);
+    .phone-status {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 6px 16px 2px;
+      font-size: 10px; font-weight: 600; color: var(--ink);
     }
-    .dot { width: 10px; height: 10px; border-radius: 50%; }
-    .dot-r { background: #FF6059; }
-    .dot-y { background: #FFBD2E; }
-    .dot-g { background: #28CA41; }
-    .mockup-url {
-      margin: 0 auto;
-      background: var(--white);
-      border-radius: 6px;
-      padding: 3px 12px;
-      font-size: 11px;
-      color: var(--ink3);
-    }
-    .mockup-content { padding: 20px; }
+    .mockup-content { padding: 12px 14px 16px; }
     .mockup-tabs {
       display: flex; gap: 4px;
       background: var(--bg2);
@@ -423,41 +442,55 @@
 <!-- HERO -->
 <section class="hero">
   <div class="hero-badge">Jetzt kostenlos verfügbar</div>
-  <h1>Der smarte<br><em>Haushaltsmanager</em><br>für euch beide</h1>
-  <p class="hero-sub">Nie wieder "Haben wir noch Waschmittel?" – Vorrat tracken, Einkauf planen und Aufgaben gemeinsam verwalten. Einfach, schnell, synchron.</p>
+  <h1>Nie wieder<br><em>"Haben wir noch</em><br><em>Waschmittel?"</em></h1>
+  <p class="hero-sub">Vorrat tracken, Einkaufsliste teilen und Aufgaben gemeinsam erledigen — für Paare und WGs. Kostenlos, ohne Passwort, in Echtzeit.</p>
   <div class="hero-actions">
     <a href="https://www.haushaltspro.de/app" class="btn-primary">Jetzt kostenlos starten</a>
     <a href="#features" class="btn-ghost">Mehr erfahren</a>
   </div>
+  <div class="social-proof">
+    <span class="social-proof-avatars">🧑‍🤝‍🧑👫🧑‍🤝‍🧑</span>
+    <span>Bereits von <strong>50+ Paaren & WGs</strong> genutzt</span>
+  </div>
 
   <div class="hero-visual">
-    <div class="mockup">
-      <div class="mockup-bar">
-        <div class="dot dot-r"></div>
-        <div class="dot dot-y"></div>
-        <div class="dot dot-g"></div>
-        <div class="mockup-url">haushaltspro.de</div>
-      </div>
-      <div class="mockup-content">
-        <div class="mockup-tabs">
-          <div class="mockup-tab active">Vorrat</div>
-          <div class="mockup-tab">Einkaufsliste</div>
-          <div class="mockup-tab">Aufgaben</div>
+    <div class="phone-frame">
+      <div class="phone-notch"></div>
+      <div class="phone-screen">
+        <div class="phone-status">
+          <span>9:41</span>
+          <span>●●●●</span>
         </div>
-        <div class="mockup-item">
-          <div class="mockup-emoji">☕</div>
-          <div class="mockup-name">Kaffee</div>
-          <div class="mockup-status">Vorrätig</div>
-        </div>
-        <div class="mockup-item low">
-          <div class="mockup-emoji">🧺</div>
-          <div class="mockup-name">Waschmittel</div>
-          <div class="mockup-badge">~ Fast leer</div>
-        </div>
-        <div class="mockup-item">
-          <div class="mockup-emoji">🧻</div>
-          <div class="mockup-name">Toilettenpapier</div>
-          <div class="mockup-status">Vorrätig</div>
+        <div class="mockup-content">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <span style="font-size:13px;font-weight:600;color:var(--ink)">🏠 Unser Haushalt</span>
+            <span style="font-size:10px;background:var(--app-light);color:var(--app);padding:2px 8px;border-radius:99px;font-weight:600">HAUS-4729</span>
+          </div>
+          <div class="mockup-tabs">
+            <div class="mockup-tab active">Vorrat</div>
+            <div class="mockup-tab">Einkauf</div>
+            <div class="mockup-tab">Aufgaben</div>
+          </div>
+          <div class="mockup-item">
+            <div class="mockup-emoji">☕</div>
+            <div class="mockup-name">Kaffee</div>
+            <div class="mockup-status">✓ ok</div>
+          </div>
+          <div class="mockup-item low">
+            <div class="mockup-emoji">🧺</div>
+            <div class="mockup-name">Waschmittel</div>
+            <div class="mockup-badge">~ Fast leer</div>
+          </div>
+          <div class="mockup-item">
+            <div class="mockup-emoji">🧻</div>
+            <div class="mockup-name">Toilettenpapier</div>
+            <div class="mockup-status">✓ ok</div>
+          </div>
+          <div class="mockup-item" style="border-color:#e24b4a;background:#fff8f8">
+            <div class="mockup-emoji">🥛</div>
+            <div class="mockup-name">Milch</div>
+            <div class="mockup-badge" style="background:#fcebeb;color:#a32d2d">✕ Leer</div>
+          </div>
         </div>
       </div>
     </div>
@@ -485,19 +518,19 @@
       <p>Von "Glühbirne wechseln" bis "Steuererklärung" – mit Priorität, Fälligkeitsdatum und Kosten. Nichts fällt mehr durch den Rost.</p>
     </div>
     <div class="feature-card">
+      <div class="feature-icon" style="background:var(--app-light)">🔄</div>
+      <h3>Routinen</h3>
+      <p>Wöchentliche Aufgaben wie "Müll rausbringen" oder "Bad putzen" einmal anlegen, automatisch an den richtigen Tagen erinnert werden.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:var(--app-light)">🏪</div>
+      <h3>Einkaufsmodus</h3>
+      <p>Ein Tipper und die Liste öffnet sich im Vollbild — große Checkboxen, klare Ansicht, optimiert fürs Handy in der Hand im Supermarkt.</p>
+    </div>
+    <div class="feature-card">
       <div class="feature-icon">⚡</div>
-      <h3>Echtzeit-Sync</h3>
-      <p>Änderungen erscheinen sofort auf beiden Handys. Kein Neuladen, kein "Hast du die Liste?" – einfach immer aktuell.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">📊</div>
-      <h3>Häufig gekauft</h3>
-      <p>Haushaltspro merkt sich was ihr regelmäßig kauft und schlägt es automatisch vor. Die Einkaufsliste schreibt sich fast von selbst.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">👥</div>
-      <h3>Einladungscode</h3>
-      <p>Einfach einen Code teilen – und schon habt ihr einen gemeinsamen Haushalt. Kein kompliziertes Setup, kein IT-Studium nötig.</p>
+      <h3>Echtzeit-Sync & Offline</h3>
+      <p>Änderungen erscheinen sofort auf beiden Handys. Als PWA installierbar — direkt vom Homescreen öffnen, kein App Store nötig.</p>
     </div>
   </div>
 </section>
@@ -521,7 +554,7 @@
       <div class="step">
         <div class="step-num">03</div>
         <h4>Loslegen</h4>
-        <p>25 Haushaltsartikel mit einem Klick hinzufügen und sofort mit der Organisation beginnen.</p>
+        <p>25 Haushaltsartikel mit einem Klick hinzufügen, Routinen anlegen und sofort gemeinsam organisiert sein.</p>
       </div>
     </div>
   </div>
@@ -532,18 +565,19 @@
   <div class="section-label">Preis</div>
   <h2 class="section-title">Einfach. Fair. Transparent.</h2>
   <div class="pricing-card">
-    <div class="pricing-badge">Aktuell kostenlos</div>
+    <div class="pricing-badge">Kostenlos · Für immer für Early Adopters</div>
     <div class="pricing-price">0€ <span>/ Monat</span></div>
-    <p class="pricing-desc">Alle Features, keine Einschränkungen. Für immer kostenlos für Early Adopters.</p>
+    <p class="pricing-desc">Wer jetzt dabei ist, bekommt alles — ohne Einschränkungen, ohne versteckte Kosten.</p>
     <ul class="pricing-features">
       <li>Unbegrenzte Artikel im Vorrat</li>
       <li>Geteilte Einkaufsliste in Echtzeit</li>
       <li>Aufgaben mit Priorität & Fälligkeitsdatum</li>
+      <li>Routinen & wöchentliche Erinnerungen</li>
+      <li>Einkaufsmodus — optimiert fürs Handy</li>
       <li>Häufig-gekauft Vorschläge</li>
-      <li>Gemeinsamer Haushalt mit Einladungscode</li>
       <li>Als App auf dem Homescreen installierbar</li>
     </ul>
-    <a href="https://www.haushaltspro.de/app" class="btn-primary" style="display:block;text-align:center">Kostenlos starten</a>
+    <a href="https://www.haushaltspro.de/app" class="btn-primary" style="display:block;text-align:center">Jetzt kostenlos starten</a>
   </div>
 </section>
 
@@ -557,7 +591,7 @@
 </main>
 
 <footer>
-  <p>© 2026 Haushaltspro · <a href="https://www.haushaltspro.de/app">App öffnen</a> · <a href="mailto:hallo@haushaltspro.de">Fragen oder Feedback?</a></p>
+  <p>© 2026 Haushaltspro · <a href="https://www.haushaltspro.de/app">App öffnen</a> · <a href="/impressum">Impressum & Datenschutz</a> · <a href="mailto:hallo@haushaltspro.de">Kontakt</a></p>
 </footer>
 
 </body>

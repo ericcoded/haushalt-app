@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Impressum & Datenschutz – Haushaltspro</title>
+  <meta name="robots" content="noindex, follow" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #F7F5F0; --ink: #1A1814; --ink2: #6B6860; --ink3: #A8A59E;
+      --accent: #2D5A3D; --white: #FEFCF8; --border: rgba(26,24,20,0.08);
+    }
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--ink); line-height: 1.7; }
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      padding: 1.25rem 2rem;
+      display: flex; align-items: center; justify-content: space-between;
+      background: rgba(247,245,240,0.9); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-logo {
+      font-family: 'DM Serif Display', serif; font-size: 18px;
+      color: var(--ink); text-decoration: none;
+    }
+    .nav-back {
+      font-size: 14px; color: var(--ink2); text-decoration: none;
+      padding: 8px 16px; border: 1px solid var(--border); border-radius: 99px;
+      transition: all 0.2s;
+    }
+    .nav-back:hover { color: var(--ink); border-color: var(--ink); }
+    main { max-width: 720px; margin: 0 auto; padding: 4rem 2rem 6rem; }
+    h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(2rem, 5vw, 3rem);
+      letter-spacing: -0.02em; margin-bottom: 0.5rem;
+    }
+    .subtitle { font-size: 14px; color: var(--ink3); margin-bottom: 3rem; font-weight: 300; }
+    h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.4rem; letter-spacing: -0.01em;
+      margin: 2.5rem 0 0.75rem; color: var(--ink);
+    }
+    p { font-size: 15px; color: var(--ink2); font-weight: 300; margin-bottom: 1rem; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .placeholder {
+      background: #fff4d6; border: 1px dashed #f0b429;
+      border-radius: 8px; padding: 8px 14px;
+      font-size: 13px; color: #8a6200;
+      display: inline-block; margin-bottom: 1rem;
+    }
+    .divider { height: 1px; background: var(--border); margin: 3rem 0; }
+    footer {
+      text-align: center; padding: 2rem; border-top: 1px solid var(--border);
+      font-size: 13px; color: var(--ink3);
+    }
+    footer a { color: var(--ink2); text-decoration: none; }
+    @media (max-width: 600px) {
+      main { padding: 2rem 1.25rem 4rem; }
+      nav { padding: 1rem 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">🏠 Haushaltspro</a>
+  <a href="/" class="nav-back">← Zurück</a>
+</nav>
+
+<main>
+  <h1>Impressum</h1>
+  <p class="subtitle">Angaben gemäß § 5 TMG</p>
+
+  <div class="placeholder">⚠️ Bitte fülle die folgenden Felder mit deinen echten Angaben aus.</div>
+
+  <h2>Verantwortlich</h2>
+  <p>
+    [Dein vollständiger Name]<br>
+    [Straße und Hausnummer]<br>
+    [PLZ und Stadt]<br>
+    Deutschland
+  </p>
+
+  <h2>Kontakt</h2>
+  <p>
+    E-Mail: <a href="mailto:hallo@haushaltspro.de">hallo@haushaltspro.de</a>
+  </p>
+
+  <h2>Hinweis zur Umsatzsteuer</h2>
+  <p>
+    Haushaltspro ist ein privates, nicht-kommerzielles Projekt und derzeit nicht umsatzsteuerpflichtig.
+    Es findet keine gewerbliche Tätigkeit im Sinne des UStG statt.
+  </p>
+
+  <div class="divider"></div>
+
+  <h1>Datenschutzerklärung</h1>
+  <p class="subtitle">Stand: März 2026</p>
+
+  <h2>1. Verantwortlicher</h2>
+  <p>
+    Verantwortlicher im Sinne der DSGVO ist die unter "Impressum" genannte Person.
+  </p>
+
+  <h2>2. Welche Daten wir erheben</h2>
+  <p>
+    Zur Nutzung der App ist ausschließlich eine <strong>E-Mail-Adresse</strong> erforderlich.
+    Diese wird verwendet, um dir einen passwortlosen Anmeldelink zuzuschicken.
+  </p>
+  <p>
+    Darüber hinaus speichern wir die von dir eingegebenen Haushaltsdaten (Artikel, Aufgaben, Routinen)
+    in einer Datenbank, um die gemeinsame Nutzung zu ermöglichen.
+  </p>
+
+  <h2>3. Zweck der Datenverarbeitung</h2>
+  <p>
+    Deine Daten werden ausschließlich zum Betrieb der Haushaltspro-App verwendet.
+    Es findet keine Weitergabe an Dritte statt und keine Nutzung zu Werbezwecken.
+  </p>
+
+  <h2>4. Dienstleister & Hosting</h2>
+  <p>
+    Die App wird auf <strong>Vercel Inc.</strong> (San Francisco, USA) gehostet.
+    Die Datenbank und Authentifizierung werden über <strong>Supabase Inc.</strong> (San Francisco, USA) bereitgestellt.
+    Beide Anbieter sind nach EU-Standardvertragsklauseln (SCCs) zertifiziert.
+  </p>
+  <p>
+    Weitere Informationen: <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener">Vercel Privacy Policy</a> ·
+    <a href="https://supabase.com/privacy" target="_blank" rel="noopener">Supabase Privacy Policy</a>
+  </p>
+
+  <h2>5. Cookies & lokale Speicherung</h2>
+  <p>
+    Die App verwendet <strong>localStorage</strong> im Browser ausschließlich zur Speicherung deiner
+    Sitzungsinformationen (Login-Token). Es werden keine Tracking-Cookies gesetzt.
+  </p>
+
+  <h2>6. Deine Rechte</h2>
+  <p>
+    Du hast das Recht auf Auskunft, Berichtigung und Löschung deiner gespeicherten Daten.
+    Wende dich dafür an <a href="mailto:hallo@haushaltspro.de">hallo@haushaltspro.de</a>.
+    Dein Account und alle zugehörigen Daten werden auf Anfrage vollständig gelöscht.
+  </p>
+
+  <h2>7. Änderungen dieser Erklärung</h2>
+  <p>
+    Diese Datenschutzerklärung kann gelegentlich aktualisiert werden.
+    Die aktuelle Version ist stets auf dieser Seite abrufbar.
+  </p>
+</main>
+
+<footer>
+  <p>© 2026 Haushaltspro · <a href="/">Startseite</a> · <a href="/app">App öffnen</a></p>
+</footer>
+
+</body>
+</html>
