@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
   const db = createClient(supabaseUrl, serviceKey);
 
   // ── GET ?debug=1: Zeigt Berlin-Zeit + alle Routinen in DB ─────
-  if (req.method === 'GET' && new URL(req.url).searchParams.get('debug') === '1') {
+  if (new URL(req.url).searchParams.get('debug') === '1') {
     const now2 = new Date();
     const fmt2 = new Intl.DateTimeFormat('de-DE', {
       timeZone: 'Europe/Berlin',
