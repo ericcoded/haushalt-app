@@ -105,8 +105,8 @@
     }
     .nav-logo span { color: var(--accent); }
     .nav-cta {
-      background: var(--ink);
-      color: var(--white);
+      background: var(--app);
+      color: #fff;
       text-decoration: none;
       padding: 9px 20px;
       border-radius: 99px;
@@ -115,7 +115,7 @@
       transition: all 0.2s;
       letter-spacing: -0.01em;
     }
-    .nav-cta:hover { background: var(--app); transform: translateY(-1px); }
+    .nav-cta:hover { background: #6860cc; transform: translateY(-1px); }
 
     /* HERO */
     .hero {
@@ -127,13 +127,14 @@
     }
     .hero-badge {
       display: inline-flex; align-items: center; gap: 6px;
-      background: var(--accent-light);
-      color: var(--accent);
+      background: var(--app-light);
+      color: var(--app);
       font-size: 13px; font-weight: 500;
       padding: 5px 14px;
       border-radius: 99px;
       margin-bottom: 2rem;
       animation: fadeUp 0.6s ease both;
+      border: 1px solid rgba(127,119,221,0.2);
     }
     .hero-badge::before { content: '●'; font-size: 8px; }
     .hero h1 {
@@ -163,16 +164,17 @@
       animation: fadeUp 0.6s ease 0.3s both;
     }
     .btn-primary {
-      background: var(--ink);
-      color: var(--white);
+      background: var(--app);
+      color: #fff;
       text-decoration: none;
       padding: 14px 28px;
       border-radius: 99px;
       font-size: 15px; font-weight: 500;
       transition: all 0.2s;
       letter-spacing: -0.01em;
+      box-shadow: 0 4px 16px rgba(127,119,221,0.35);
     }
-    .btn-primary:hover { background: var(--accent); transform: translateY(-2px); }
+    .btn-primary:hover { background: #6860cc; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(127,119,221,0.45); }
     .btn-ghost {
       background: transparent;
       color: var(--ink2);
@@ -240,7 +242,7 @@
       flex: 1; padding: 7px; font-size: 12px; font-weight: 500;
       border-radius: 8px; text-align: center; color: var(--ink3);
     }
-    .mockup-tab.active { background: var(--white); color: var(--ink); }
+    .mockup-tab.active { background: var(--app); color: #fff; }
     .mockup-item {
       display: flex; align-items: center; gap: 10px;
       padding: 10px 12px;
@@ -348,13 +350,14 @@
     }
     .pricing-card::before {
       content: '';
-      position: absolute; top: 0; left: 0; right: 0; height: 3px;
-      background: var(--accent);
+      position: absolute; top: 0; left: 0; right: 0; height: 4px;
+      background: linear-gradient(90deg, var(--app), #a09af0);
+      border-radius: 24px 24px 0 0;
     }
     .pricing-badge {
       display: inline-block;
-      background: var(--accent-light);
-      color: var(--accent);
+      background: var(--app-light);
+      color: var(--app);
       font-size: 12px; font-weight: 500;
       padding: 4px 12px;
       border-radius: 99px;
@@ -381,8 +384,8 @@
     .pricing-features li::before {
       content: '✓';
       width: 20px; height: 20px;
-      background: var(--accent-light);
-      color: var(--accent);
+      background: var(--app-light);
+      color: var(--app);
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
       font-size: 11px; font-weight: 700;
@@ -401,7 +404,7 @@
       letter-spacing: -0.02em;
       margin-bottom: 1rem;
     }
-    .cta h2 em { font-style: italic; color: var(--accent); }
+    .cta h2 em { font-style: italic; color: var(--app); }
     .cta p { font-size: 16px; color: var(--ink2); margin-bottom: 2rem; font-weight: 300; }
 
     /* FOOTER */
@@ -434,7 +437,7 @@
 <body>
 
 <nav>
-  <a href="https://www.haushaltspro.de" class="nav-logo">🏠 <span>Haushalts<span style="color:var(--accent);letter-spacing:0.02em">PRO</span></span></a>
+  <a href="https://www.haushaltspro.de" class="nav-logo">🏠 <span>Haushalts<span style="color:var(--app);letter-spacing:0.02em">PRO</span></span></a>
   <a href="https://www.haushaltspro.de/app" class="nav-cta">Kostenlos starten</a>
 </nav>
 
