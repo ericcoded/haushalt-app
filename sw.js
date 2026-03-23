@@ -25,11 +25,9 @@ self.addEventListener('push', e => {
     renotify: true,
   };
   // Notify open app tabs that push arrived (for diagnostics)
-  try {
-    const bc = new BroadcastChannel('push-received');
-    bc.postMessage({ title, ts: Date.now() });
-    bc.close();
-  } catch(_) {}
+  self.clients.matchAll({ includeUncontrolled: true, type: 'window' }).then(clients => {
+    clients.forEach(c => c.postMessage({ type: 'push-received', title }));
+  });
   e.waitUntil(self.registration.showNotification(title, options));
 });
 
