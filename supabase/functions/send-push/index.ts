@@ -105,13 +105,14 @@ async function sendPush(
       'Content-Type': 'application/octet-stream',
       'Content-Encoding': 'aes128gcm',
       'TTL': '86400',
+      'Urgency': 'high',
     },
     body,
   });
-  console.log('4. response status:', res.status);
+  const resText = await res.text();
+  console.log(`4. response status: ${res.status}, body: "${resText}"`);
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Push HTTP ${res.status}: ${text}`);
+    throw new Error(`Push HTTP ${res.status}: ${resText}`);
   }
 }
 
