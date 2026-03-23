@@ -91,25 +91,6 @@ Deno.serve(async (req) => {
 
   const db = createClient(supabaseUrl, serviceKey);
 
-  // ── GET ?debug=1: Zeigt Berlin-Zeit + alle Routinen in DB ─────
-  if (new URL(req.url).searchParams.get('debug') === '1') {
-    const now2 = new Date();
-    const fmt2 = new Intl.DateTimeFormat('de-DE', {
-      timeZone: 'Europe/Berlin',
-      hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false,
-    });
-    const p2 = Object.fromEntries(fmt2.formatToParts(now2).map(p => [p.type, p.value]));
-    const time2 = `${p2.hour.padStart(2,'0')}:${p2.minute.padStart(2,'0')}`;
-    const wm: Record<string,number> = { So:0,Mo:1,Di:2,Mi:3,Do:4,Fr:5,Sa:6 };
-    const day2 = wm[p2.weekday] ?? now2.getDay();
-    const { data: allRoutinen } = await db.from('routinen').select('id, titel, uhrzeit, wiederholung_tage');
-    const { data: allSubs } = await db.from('push_subscriptions').select('user_id, endpoint');
-    return new Response(JSON.stringify({
-      berlinTime: time2, currentDay: day2, weekday: p2.weekday,
-      routinen: allRoutinen, subscriptions: allSubs?.length,
-    }, null, 2), { status: 200, headers: { ...CORS, 'Content-Type': 'application/json' } });
-  }
-
   // ── POST: Direkter Test-Push mit übergebener Subscription ─────
   if (req.method === 'POST') {
     let sub: { endpoint: string; keys: { p256dh: string; auth: string } };

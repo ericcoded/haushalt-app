@@ -376,9 +376,6 @@
         <button class="push-enable-btn" onclick="requestPush()">Aktivieren</button>
       </div>
       <div id="push-active-bar" style="display:none;text-align:right;margin-bottom:8px;justify-content:flex-end;gap:12px">
-        <button onclick="testNotification()" style="background:none;border:none;font-size:12px;color:#7f77dd;cursor:pointer;padding:0">🔔 SW-Test</button>
-        <button onclick="serverPushTest(false)" style="background:none;border:none;font-size:12px;color:#7f77dd;cursor:pointer;padding:0">📡 Server-Test</button>
-        <button onclick="serverPushTest(true)" style="background:none;border:none;font-size:12px;color:#888;cursor:pointer;padding:0">📡 Leer</button>
         <button onclick="unsubscribePush()" style="background:none;border:none;font-size:12px;color:#aaa;cursor:pointer;padding:0">Deaktivieren</button>
       </div>
 
@@ -475,6 +472,37 @@
   }
   function clearStoredSession() {
     try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+  }
+
+  // Manueller Token-Refresh: prüft alle 60s ob das Token in <5min abläuft
+  function startTokenRefresh() {
+    if (refreshTimer) clearInterval(refreshTimer);
+    refreshTimer = setInterval(async () => {
+      const s = getStoredSession();
+      if (!s?.refresh_token || !s?.expires_at) return;
+      const now = Math.floor(Date.now() / 1000);
+      const timeLeft = s.expires_at - now;
+      if (timeLeft < 300) { // weniger als 5 Minuten übrig
+        try {
+          const { data, error } = await db.auth.refreshSession({ refresh_token: s.refresh_token });
+          if (data?.session) {
+            saveStoredSession(data.session);
+            // Realtime-Auth auch updaten
+            if (data.session.access_token) db.realtime.setAuth(data.session.access_token);
+          } else if (error) {
+            console.warn('Token-Refresh fehlgeschlagen:', error.message);
+            clearStoredSession();
+            showScreen('login');
+          }
+        } catch(e) {
+          console.error('Token-Refresh error:', e);
+        }
+      }
+    }, 60000);
+  }
+
+  function stopTokenRefresh() {
+    if (refreshTimer) { clearInterval(refreshTimer); refreshTimer = null; }
   }
 
   const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
@@ -626,6 +654,8 @@
   let activeFilter = 'Alle';
   let currentUser = null;
   let currentHaushalt = null;
+  let realtimeChannel = null;
+  let refreshTimer = null;
 
   // Woche startet Montag. WOCHENTAGE_JSDAY[i] = JS-getDay()-Wert für Anzeige-Index i
   const WOCHENTAGE      = ['Mo','Di','Mi','Do','Fr','Sa','So'];
@@ -693,6 +723,8 @@
 
   async function leaveHaushalt() {
     if (!confirm('Haushalt wirklich verlassen? Du kannst danach mit dem Code wieder beitreten.')) return;
+    stopTokenRefresh();
+    unsubscribeRealtime();
     await db.from('haushalt_mitglieder').delete()
       .eq('haushalt_id', currentHaushalt.id)
       .eq('user_id', currentUser.id);
@@ -701,6 +733,8 @@
   }
 
   async function logout() {
+    stopTokenRefresh();
+    unsubscribeRealtime();
     clearStoredSession();
     currentUser = null;
     currentHaushalt = null;
@@ -783,6 +817,7 @@
     loadRoutinen();
     subscribeRealtime();
     initPushState();
+    startTokenRefresh();
   }
 
   async function loadItems() {
@@ -796,13 +831,21 @@
   }
 
   function subscribeRealtime() {
+    unsubscribeRealtime(); // alten Channel aufräumen falls vorhanden
     const token = getStoredSession()?.access_token;
     if (token) db.realtime.setAuth(token);
-    db.channel('haushalt-' + currentHaushalt.id)
+    realtimeChannel = db.channel('haushalt-' + currentHaushalt.id)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'haushalt_items' }, () => loadItems())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'aufgaben' }, () => loadAufgaben())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'routinen' }, () => loadRoutinen())
       .subscribe();
+  }
+
+  function unsubscribeRealtime() {
+    if (realtimeChannel) {
+      db.removeChannel(realtimeChannel);
+      realtimeChannel = null;
+    }
   }
 
   async function loadAufgaben() {
@@ -1025,7 +1068,7 @@
     setSync('syncing', 'Speichert...');
     await db.from('haushalt_items').update({ status }).eq('id', id);
     if ((status === 'low' || status === 'out') && prev === 'ok') {
-      const already = items.find(i => i.typ === 'einkauf' && i.name === item.name && i.source === 'vorrat');
+      const already = items.find(i => i.typ === 'einkauf' && i.name.toLowerCase() === item.name.toLowerCase() && i.source === 'vorrat');
       if (!already) await db.from('haushalt_items').insert({ name: item.name, kategorie: item.kategorie || 'Sonstiges', status: 'ok', typ: 'einkauf', source: 'vorrat', bought: false, haushalt_id: currentHaushalt.id });
     }
     if (status === 'ok' && (prev === 'low' || prev === 'out')) {
@@ -1046,16 +1089,17 @@
     const item = items.find(i => i.id === id); if (!item) return;
     const bought = !item.bought;
     setSync('syncing', 'Speichert...');
-    await db.from('haushalt_items').update({ bought }).eq('id', id);
     if (bought) {
-      // buy_count auf dem Einkaufslisten-Item erhöhen (für manuell-Items)
-      await db.from('haushalt_items').update({ buy_count: (item.buy_count || 0) + 1 }).eq('id', id);
+      // bought + buy_count in einem einzigen Update (verhindert Race Condition)
+      await db.from('haushalt_items').update({ bought, buy_count: (item.buy_count || 0) + 1 }).eq('id', id);
       if (item.source === 'vorrat') {
         // buy_count auch auf dem zugehörigen Vorrat-Item erhöhen — das ist die Quelle für "Häufig gekauft"
         const vorratItem = items.find(i => i.typ === 'vorrat' && i.name.toLowerCase() === item.name.toLowerCase());
         if (vorratItem) await db.from('haushalt_items').update({ buy_count: (vorratItem.buy_count || 0) + 1 }).eq('id', vorratItem.id);
         await db.from('haushalt_items').update({ status: 'ok' }).eq('typ', 'vorrat').eq('name', item.name).eq('haushalt_id', currentHaushalt.id);
       }
+    } else {
+      await db.from('haushalt_items').update({ bought }).eq('id', id);
     }
     await loadItems();
   }
@@ -1237,7 +1281,7 @@
 
   function itemCard(i, ki) {
     const statusText = i.status === 'low' ? '~ Fast leer — auf Einkaufsliste' : i.status === 'out' ? '✕ Leer — auf Einkaufsliste' : '';
-    return `<div class="item-card ${i.status}"><div class="item-emoji-wrap ${ki.bg}">${getEmoji(i.name)}</div><div class="item-info"><div class="item-name">${i.name}</div>${statusText ? `<div class="item-status-text ${i.status}">${statusText}</div>` : ''}</div><div class="status-btns"><button class="sbtn ${i.status==='ok'?'ok':''}" onclick="setStatus('${i.id}','ok')">✓</button><button class="sbtn ${i.status==='low'?'low':''}" onclick="setStatus('${i.id}','low')">~</button><button class="sbtn ${i.status==='out'?'out':''}" onclick="setStatus('${i.id}','out')">✕</button></div><button class="del-btn" onclick="delItem('${i.id}')">✕</button></div>`;
+    return `<div class="item-card ${i.status}"><div class="item-emoji-wrap ${ki.bg}">${getEmoji(i.name)}</div><div class="item-info"><div class="item-name">${esc(i.name)}</div>${statusText ? `<div class="item-status-text ${i.status}">${statusText}</div>` : ''}</div><div class="status-btns"><button class="sbtn ${i.status==='ok'?'ok':''}" onclick="setStatus('${i.id}','ok')">✓</button><button class="sbtn ${i.status==='low'?'low':''}" onclick="setStatus('${i.id}','low')">~</button><button class="sbtn ${i.status==='out'?'out':''}" onclick="setStatus('${i.id}','out')">✕</button></div><button class="del-btn" onclick="delItem('${i.id}')">✕</button></div>`;
   }
 
   async function updateMenge(id, val) {
@@ -1268,7 +1312,7 @@
   function shopItem(i) {
     const safeId = i.id;
     const mengeVal = (i.menge || '').replace(/"/g, '&quot;');
-    return `<div class="shop-item ${i.bought?'bought':''}"><button class="shop-check ${i.bought?'done':''}" onclick="toggleBought('${safeId}')">${i.bought?'✓':''}</button><span class="shop-emoji">${getEmoji(i.name)}</span><span class="shop-name">${i.name}</span><input class="shop-menge-input" type="text" value="${mengeVal}" placeholder="Menge" onblur="updateMenge('${safeId}',this.value)" onkeydown="if(event.key==='Enter'){this.blur()}" /><span class="source-tag ${i.source}">${i.source==='vorrat'?'Vorrat':'Manuell'}</span><button class="del-btn" onclick="delShopItem('${safeId}')">✕</button></div>`;
+    return `<div class="shop-item ${i.bought?'bought':''}"><button class="shop-check ${i.bought?'done':''}" onclick="toggleBought('${safeId}')">${i.bought?'✓':''}</button><span class="shop-emoji">${getEmoji(i.name)}</span><span class="shop-name">${esc(i.name)}</span><input class="shop-menge-input" type="text" value="${mengeVal}" placeholder="Menge" onblur="updateMenge('${safeId}',this.value)" onkeydown="if(event.key==='Enter'){this.blur()}" /><span class="source-tag ${esc(i.source)}">${i.source==='vorrat'?'Vorrat':'Manuell'}</span><button class="del-btn" onclick="delShopItem('${safeId}')">✕</button></div>`;
   }
 
   // ── ROUTINEN ──────────────────────────────────────────────────
@@ -1462,62 +1506,6 @@
     if (activeBar) activeBar.style.display = (supported && pushSubscribed) ? 'flex' : 'none';
   }
 
-  // SW meldet sich wenn push-Event eintrifft
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.addEventListener('message', e => {
-      if (e.data?.type === 'push-received') {
-        console.log('[App] Push-Event im SW empfangen:', e.data);
-        showToast('✓ Push-Event empfangen: ' + (e.data.title || '?'));
-      }
-    });
-  }
-
-  async function serverPushTest(empty = false) {
-    try {
-      showToast('Sende Server-Test...');
-      const reg = await navigator.serviceWorker.ready;
-      const sub = await reg.pushManager.getSubscription();
-      if (!sub) { showToast('Keine aktive Subscription'); return; }
-      // VAPID-Key-Vergleich: subscription-Key vs app-Key
-      if (sub.options?.applicationServerKey) {
-        const subKey = btoa(String.fromCharCode(...new Uint8Array(sub.options.applicationServerKey)))
-          .replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
-        const appKey = VAPID_PUBLIC_KEY;
-        const match = subKey === appKey;
-        console.log('Subscription key:', subKey);
-        console.log('App VAPID key:   ', appKey);
-        console.log('Keys match:', match);
-        if (!match) { showToast('⚠️ VAPID-Key-Mismatch! Sub:' + subKey.slice(0,12) + ' App:' + appKey.slice(0,12)); return; }
-      }
-      const url = 'https://awvcltzpqxfnuwikbiyl.supabase.co/functions/v1/send-push' + (empty ? '?empty=1' : '');
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
-        body: JSON.stringify({ subscription: sub.toJSON() }),
-      });
-      const text = await res.text();
-      showToast(res.ok ? `Server: ${text}` : `Fehler: ${text}`);
-      console.log('Server-Push-Test:', res.status, text);
-    } catch(e) {
-      showToast('Fehler: ' + e.message);
-      console.error('serverPushTest error:', e);
-    }
-  }
-
-  async function testNotification() {
-    try {
-      const reg = await navigator.serviceWorker.ready;
-      await reg.showNotification('🔔 Testbenachrichtigung', {
-        body: 'Wenn du das siehst, funktioniert der Service Worker korrekt!',
-        icon: '/icons/icon.svg',
-        tag: 'test-notification',
-      });
-      showToast('Testbenachrichtigung gesendet');
-    } catch(e) {
-      showToast('Fehler: ' + e.message);
-      console.error('testNotification error:', e);
-    }
-  }
 
   async function unsubscribePush() {
     if (!confirm('Benachrichtigungen deaktivieren?')) return;
@@ -1677,7 +1665,10 @@
 
   if (!hasError) initAuth();
 
-  if ('serviceWorker' in navigator) {
+  // SW wird in initPushState() registriert (mit reg.update()),
+  // daher keine separate Registrierung hier nötig.
+  // Für Nicht-Push-Nutzer trotzdem registrieren, aber nur einmal:
+  if ('serviceWorker' in navigator && !navigator.serviceWorker.controller) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   }
 </script>

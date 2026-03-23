@@ -24,10 +24,6 @@ self.addEventListener('push', e => {
     tag: data.tag || 'haushalt-reminder',
     renotify: true,
   };
-  // Notify open app tabs that push arrived (for diagnostics)
-  self.clients.matchAll({ includeUncontrolled: true, type: 'window' }).then(clients => {
-    clients.forEach(c => c.postMessage({ type: 'push-received', title }));
-  });
   e.waitUntil(self.registration.showNotification(title, options));
 });
 
