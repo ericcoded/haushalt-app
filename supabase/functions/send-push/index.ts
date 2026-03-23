@@ -61,10 +61,11 @@ async function encryptPayload(p256dhB64u: string, authB64u: string, payload: str
   const uaPubKey    = await crypto.subtle.importKey('raw', uaPublic, { name: 'ECDH', namedCurve: 'P-256' }, false, []);
   const ecdhSecret  = new Uint8Array(await crypto.subtle.deriveBits({ name: 'ECDH', public: uaPubKey }, asKP.privateKey, 256));
 
-  // RFC 8291: IKM = HKDF(salt=authSecret, ikm=ecdhSecret, info="WebPush: info\0" || uaPublic || asPublic || 0x01, L=32)
+  // RFC 8291: IKM = HKDF(salt=authSecret, ikm=ecdhSecret, info="WebPush: info\0" || uaPublic || asPublic, L=32)
+  // KEIN trailing 0x01 – Web Crypto's HKDF fügt den Counter-Byte intern hinzu
   const webpushInfo = new Uint8Array([
     ...new TextEncoder().encode('WebPush: info\x00'),
-    ...uaPublic, ...asPublic, 0x01,
+    ...uaPublic, ...asPublic,
   ]);
   const ikm = await hkdf(authSecret, ecdhSecret, webpushInfo, 32);
 
