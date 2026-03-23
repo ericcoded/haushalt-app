@@ -281,6 +281,53 @@
     /* Cat pill hover */
     .cat-pill:hover:not(.active) { border-color: var(--c-primary); color: var(--c-primary); }
 
+    /* ── SUCHE ── */
+    .search-wrap { position: relative; margin-bottom: 1rem; }
+    .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 15px; pointer-events: none; }
+    .search-input { width: 100%; padding: 10px 36px 10px 36px; border: 1px solid var(--border-in); border-radius: var(--r-md); font-size: 14px; background: var(--surface); color: var(--t1); outline: none; transition: border-color var(--ease); font-family: inherit; }
+    .search-input:focus { border-color: var(--c-primary); }
+    .search-input::placeholder { color: var(--t4); }
+    .search-clear { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--t4); cursor: pointer; font-size: 18px; padding: 2px 4px; line-height: 1; display: none; border-radius: 50%; }
+    .search-clear.visible { display: block; }
+    .search-clear:hover { color: var(--t2); }
+
+    /* ── EINKAUFSMODUS ── */
+    .shop-mode-btn { font-size: 12px; color: var(--c-primary); background: var(--c-primary-bg); border: none; border-radius: var(--r-full); padding: 5px 12px; cursor: pointer; font-weight: 500; transition: opacity var(--ease); }
+    .shop-mode-btn:hover { opacity: 0.8; }
+    .shop-mode-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 100; overflow-y: auto; display: none; }
+    .shop-mode-overlay.active { display: block; }
+    .shop-mode-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); }
+    .shop-mode-title { font-size: 18px; font-weight: 700; color: var(--t1); }
+    .shop-mode-close { width: 36px; height: 36px; border-radius: 50%; background: var(--surface-2); border: none; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--t2); transition: background var(--ease); }
+    .shop-mode-close:hover { background: var(--border); }
+    .shop-mode-list { padding: 1rem; max-width: 480px; margin: 0 auto; }
+    .shop-mode-item { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px 16px; display: flex; align-items: center; gap: 14px; margin-bottom: 10px; transition: all 0.2s; box-shadow: var(--shadow); }
+    .shop-mode-item.bought { opacity: 0.35; }
+    .shop-mode-check { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--t5); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; transition: all var(--ease); }
+    .shop-mode-check.done { background: var(--c-green); border-color: var(--c-green); color: white; }
+    .shop-mode-emoji { font-size: 28px; flex-shrink: 0; }
+    .shop-mode-name { font-size: 18px; font-weight: 500; color: var(--t1); }
+    .shop-mode-item.bought .shop-mode-name { text-decoration: line-through; color: var(--t4); }
+    .shop-mode-menge { font-size: 13px; color: var(--t4); margin-top: 2px; }
+    .shop-mode-progress-bar { height: 4px; background: var(--border); margin: 0 1.25rem 0.5rem; border-radius: 99px; overflow: hidden; }
+    .shop-mode-progress-fill { height: 100%; background: var(--c-green); border-radius: 99px; transition: width 0.3s ease; }
+
+    /* ── ONBOARDING ── */
+    .onboard-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: none; align-items: flex-end; justify-content: center; padding: 1rem; }
+    .onboard-overlay.active { display: flex; }
+    .onboard-card { background: var(--surface); border-radius: 24px 24px 20px 20px; padding: 2rem 1.5rem 1.5rem; max-width: 420px; width: 100%; text-align: center; animation: slide-up 0.3s ease; }
+    @keyframes slide-up { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .onboard-emoji { font-size: 56px; display: block; margin-bottom: 1rem; }
+    .onboard-title { font-size: 20px; font-weight: 700; color: var(--t1); margin-bottom: 8px; }
+    .onboard-text { font-size: 14px; color: var(--t3); line-height: 1.65; margin-bottom: 1.5rem; }
+    .onboard-dots { display: flex; justify-content: center; gap: 6px; margin-bottom: 1.5rem; }
+    .onboard-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: background var(--ease), transform var(--ease); }
+    .onboard-dot.active { background: var(--c-primary); transform: scale(1.3); }
+    .onboard-btn { width: 100%; background: var(--c-primary); color: white; border: none; border-radius: 12px; padding: 13px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background var(--ease); }
+    .onboard-btn:hover { background: var(--c-primary-dk); }
+    .onboard-skip { background: none; border: none; color: var(--t4); font-size: 13px; cursor: pointer; margin-top: 10px; width: 100%; padding: 6px; transition: color var(--ease); }
+    .onboard-skip:hover { color: var(--t2); }
+
     /* ─────────────────────────────────────────────── */
     /* DARK MODE                                        */
     /* ─────────────────────────────────────────────── */
@@ -479,7 +526,15 @@
     <div id="tab-einkauf" style="display:none">
       <div class="shop-header">
         <span class="shop-count" id="shop-count">0 Artikel</span>
-        <button class="clear-btn" onclick="clearBought()">Gekaufte entfernen</button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="shop-mode-btn" onclick="enterShopMode()">🛒 Einkaufsmodus</button>
+          <button class="clear-btn" onclick="clearBought()">Gekaufte entfernen</button>
+        </div>
+      </div>
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input class="search-input" id="shop-search-input" type="text" placeholder="Artikel suchen..." oninput="setShopSearch(this.value)" />
+        <button class="search-clear" id="shop-search-clear" onclick="clearShopSearch()">×</button>
       </div>
       <div id="frequently-section" class="frequently-section" style="display:none">
         <div class="frequently-title">Häufig gekauft</div>
@@ -532,6 +587,11 @@
 
       <div class="section-divider"></div>
       <div class="tab-section-label">Aufgaben</div>
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input class="search-input" id="aufgaben-search-input" type="text" placeholder="Aufgabe suchen..." oninput="setAufgabenSearch(this.value)" />
+        <button class="search-clear" id="aufgaben-search-clear" onclick="clearAufgabenSearch()">×</button>
+      </div>
 
       <div class="aufgaben-form">
         <div class="aufgaben-form-title">Neue Aufgabe</div>
@@ -578,6 +638,35 @@
         <div class="empty-sub">Füge oben eine neue Aufgabe hinzu.</div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- EINKAUFSMODUS OVERLAY -->
+<div class="shop-mode-overlay" id="shop-mode-overlay">
+  <div class="shop-mode-header">
+    <div>
+      <div class="shop-mode-title">🛒 Einkaufsmodus</div>
+      <div id="shop-mode-progress-text" class="shop-mode-progress-text"></div>
+    </div>
+    <button class="shop-mode-close" onclick="exitShopMode()">✕</button>
+  </div>
+  <div class="shop-mode-progress-bar"><div class="shop-mode-progress-fill" id="shop-mode-progress-fill" style="width:0%"></div></div>
+  <div class="shop-mode-list" id="shop-mode-list"></div>
+</div>
+
+<!-- ONBOARDING OVERLAY -->
+<div class="onboard-overlay" id="onboard-overlay">
+  <div class="onboard-card">
+    <span class="onboard-emoji" id="onboard-emoji">🏠</span>
+    <div class="onboard-title" id="onboard-title"></div>
+    <div class="onboard-text" id="onboard-text"></div>
+    <div class="onboard-dots">
+      <div class="onboard-dot active"></div>
+      <div class="onboard-dot"></div>
+      <div class="onboard-dot"></div>
+    </div>
+    <button class="onboard-btn" id="onboard-btn" onclick="nextOnboardStep()">Weiter →</button>
+    <button class="onboard-skip" onclick="closeOnboarding()">Überspringen</button>
   </div>
 </div>
 
@@ -792,6 +881,102 @@
   const WOCHENTAGE      = ['Mo','Di','Mi','Do','Fr','Sa','So'];
   const WOCHENTAGE_JSDAY = [1,   2,   3,   4,   5,   6,   0];
 
+  // ── STATE ──────────────────────────────────────────────────────
+  let shopSearch = '';
+  let aufgabenSearch = '';
+  let onboardStep = 0;
+
+  const ONBOARD_STEPS = [
+    { emoji: '🏠', title: 'Willkommen!', text: 'Hier verwaltet ihr euren Haushalt gemeinsam — Vorrat, Einkaufsliste und Aufgaben, alles in einem.' },
+    { emoji: '🛒', title: 'So funktioniert der Vorrat', text: 'Tippe auf "~" wenn ein Artikel fast leer ist, auf "✕" wenn er leer ist — er landet dann sofort auf eurer Einkaufsliste.' },
+    { emoji: '👥', title: 'Partner einladen', text: 'Den Code oben rechts mit deiner Partnerin oder deinem Mitbewohner teilen — und schon sind alle dabei.' },
+  ];
+
+  // ── SUCHE ──────────────────────────────────────────────────────
+  function setShopSearch(val) {
+    shopSearch = val.trim().toLowerCase();
+    document.getElementById('shop-search-clear').classList.toggle('visible', shopSearch.length > 0);
+    render();
+  }
+  function clearShopSearch() {
+    document.getElementById('shop-search-input').value = '';
+    setShopSearch('');
+  }
+  function setAufgabenSearch(val) {
+    aufgabenSearch = val.trim().toLowerCase();
+    document.getElementById('aufgaben-search-clear').classList.toggle('visible', aufgabenSearch.length > 0);
+    renderAufgaben();
+  }
+  function clearAufgabenSearch() {
+    document.getElementById('aufgaben-search-input').value = '';
+    setAufgabenSearch('');
+  }
+
+  // ── EINKAUFSMODUS ──────────────────────────────────────────────
+  function enterShopMode() {
+    document.getElementById('shop-mode-overlay').classList.add('active');
+    document.body.style.overflow = 'hidden';
+    renderShopMode();
+  }
+  function exitShopMode() {
+    document.getElementById('shop-mode-overlay').classList.remove('active');
+    document.body.style.overflow = '';
+  }
+  function renderShopMode() {
+    const overlay = document.getElementById('shop-mode-overlay');
+    if (!overlay.classList.contains('active')) return;
+    const einkauf = items.filter(i => i.typ === 'einkauf' && i.status !== 'counter');
+    const toBuy = einkauf.filter(i => !i.bought);
+    const bought = einkauf.filter(i => i.bought);
+    const total = toBuy.length + bought.length;
+    const pct = total > 0 ? Math.round((bought.length / total) * 100) : 0;
+    document.getElementById('shop-mode-progress-text').textContent =
+      total > 0 ? `${bought.length} von ${total} erledigt` : 'Liste ist leer';
+    document.getElementById('shop-mode-progress-fill').style.width = pct + '%';
+    document.getElementById('shop-mode-list').innerHTML = [...toBuy, ...bought].map(i => `
+      <div class="shop-mode-item ${i.bought ? 'bought' : ''}">
+        <button class="shop-mode-check ${i.bought ? 'done' : ''}" onclick="toggleBought('${i.id}')">
+          ${i.bought ? '✓' : ''}
+        </button>
+        <span class="shop-mode-emoji">${getEmoji(i.name)}</span>
+        <div style="flex:1;min-width:0">
+          <div class="shop-mode-name">${esc(i.name)}</div>
+          ${i.menge ? `<div class="shop-mode-menge">${esc(i.menge)}</div>` : ''}
+        </div>
+      </div>`).join('');
+  }
+
+  // ── ONBOARDING ─────────────────────────────────────────────────
+  function showOnboarding() {
+    if (!currentHaushalt) return;
+    if (localStorage.getItem('hp-onboarded-' + currentHaushalt.id)) return;
+    onboardStep = 0;
+    renderOnboardStep();
+    document.getElementById('onboard-overlay').classList.add('active');
+  }
+  function renderOnboardStep() {
+    const s = ONBOARD_STEPS[onboardStep];
+    document.getElementById('onboard-emoji').textContent = s.emoji;
+    document.getElementById('onboard-title').textContent = s.title;
+    document.getElementById('onboard-text').textContent = s.text;
+    document.getElementById('onboard-btn').textContent =
+      onboardStep < ONBOARD_STEPS.length - 1 ? 'Weiter →' : 'Los geht\'s! 🚀';
+    document.querySelectorAll('.onboard-dot').forEach((d, i) =>
+      d.classList.toggle('active', i === onboardStep));
+  }
+  function nextOnboardStep() {
+    if (onboardStep < ONBOARD_STEPS.length - 1) {
+      onboardStep++;
+      renderOnboardStep();
+    } else {
+      closeOnboarding();
+    }
+  }
+  function closeOnboarding() {
+    localStorage.setItem('hp-onboarded-' + currentHaushalt.id, '1');
+    document.getElementById('onboard-overlay').classList.remove('active');
+  }
+
   function setSync(status, text) {
     const el = document.getElementById('sync-status');
     el.className = 'sync-indicator ' + status;
@@ -949,6 +1134,7 @@
     subscribeRealtime();
     initPushState();
     startTokenRefresh();
+    showOnboarding();
   }
 
   async function loadItems() {
@@ -1107,7 +1293,8 @@
       return 0;
     });
 
-    list.innerHTML = sorted.map(a => {
+    const filtered = aufgabenSearch ? sorted.filter(a => a.titel.toLowerCase().includes(aufgabenSearch)) : sorted;
+    list.innerHTML = filtered.map(a => {
       const p = a.prioritaet || 2;
       const st = a.status || 'offen';
 
@@ -1389,10 +1576,12 @@
     }
     document.getElementById('vorrat-list').innerHTML = vhtml;
 
-    const toBuyItems = einkauf.filter(i => !i.bought && i.status !== 'counter');
-    const boughtItems = einkauf.filter(i => i.bought);
+    const allToBuy = einkauf.filter(i => !i.bought && i.status !== 'counter');
+    const allBought = einkauf.filter(i => i.bought);
+    const toBuyItems = shopSearch ? allToBuy.filter(i => i.name.toLowerCase().includes(shopSearch)) : allToBuy;
+    const boughtItems = shopSearch ? allBought.filter(i => i.name.toLowerCase().includes(shopSearch)) : allBought;
     let ehtml = '';
-    if (!toBuyItems.length && !boughtItems.length) {
+    if (!allToBuy.length && !allBought.length) {
       ehtml = '<div class="empty"><span class="empty-icon">🛒</span><div class="empty-title">Einkaufsliste ist leer</div><div class="empty-sub">Setz einen Artikel im Vorrat auf "~" oder "✕",<br>er landet dann automatisch hier.</div></div>';
     } else {
       const shopByKat = {};
@@ -1408,6 +1597,7 @@
     }
     document.getElementById('shop-list').innerHTML = ehtml;
     renderFrequently();
+    renderShopMode();
   }
 
   function itemCard(i, ki) {
