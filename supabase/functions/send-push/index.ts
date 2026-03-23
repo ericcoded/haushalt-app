@@ -90,30 +90,29 @@ async function encryptPayload(p256dhB64u: string, authB64u: string, payload: str
 
 async function sendPush(
   endpoint: string, p256dh: string, auth: string,
-  payload: string, vapidPub: string, vapidPriv: string, vapidSub: string
+  payload: string | null, vapidPub: string, vapidPriv: string, vapidSub: string
 ): Promise<void> {
   const audience = (() => { const u = new URL(endpoint); return `${u.protocol}//${u.host}`; })();
-  console.log('1. createVapidJWT...');
-  const jwt  = await createVapidJWT(audience, vapidSub, vapidPriv, vapidPub);
-  console.log('2. encryptPayload...');
-  const body = await encryptPayload(p256dh, auth, payload);
-  console.log('3. fetch push endpoint...');
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Authorization': `vapid t=${jwt},k=${vapidPub}`,
-      'Content-Type': 'application/octet-stream',
-      'Content-Encoding': 'aes128gcm',
-      'TTL': '86400',
-      'Urgency': 'high',
-    },
-    body,
-  });
-  const resText = await res.text();
-  console.log(`4. response status: ${res.status}, body: "${resText}"`);
-  if (!res.ok) {
-    throw new Error(`Push HTTP ${res.status}: ${resText}`);
+  const jwt = await createVapidJWT(audience, vapidSub, vapidPriv, vapidPub);
+
+  const headers: Record<string, string> = {
+    'Authorization': `vapid t=${jwt},k=${vapidPub}`,
+    'TTL': '86400',
+    'Urgency': 'high',
+  };
+
+  let body: Uint8Array | undefined;
+  if (payload !== null) {
+    body = await encryptPayload(p256dh, auth, payload);
+    headers['Content-Type'] = 'application/octet-stream';
+    headers['Content-Encoding'] = 'aes128gcm';
   }
+
+  console.log(`Sending push (payload=${payload !== null ? 'yes' : 'empty'}) to ${new URL(endpoint).hostname}...`);
+  const res = await fetch(endpoint, { method: 'POST', headers, body });
+  const resText = await res.text();
+  console.log(`Response: ${res.status}, body: "${resText}"`);
+  if (!res.ok) throw new Error(`Push HTTP ${res.status}: ${resText}`);
 }
 
 // ── Main ──────────────────────────────────────────────────────
@@ -144,7 +143,8 @@ Deno.serve(async (req) => {
     } catch {
       return new Response('Bad Request: subscription fehlt', { status: 400, headers: CORS });
     }
-    const payload = JSON.stringify({ title: '🔔 Server-Test', body: 'Push über Server empfangen!', url: '/app', tag: 'server-test' });
+    const empty = new URL(req.url).searchParams.get('empty') === '1';
+    const payload = empty ? null : JSON.stringify({ title: '🔔 Server-Test', body: 'Push über Server empfangen!', url: '/app', tag: 'server-test' });
     const domain = new URL(sub.endpoint).hostname;
     try {
       await sendPush(sub.endpoint, sub.keys.p256dh, sub.keys.auth, payload, vapidPublicKey, vapidPrivateKey, vapidSubject);

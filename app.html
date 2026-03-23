@@ -377,7 +377,8 @@
       </div>
       <div id="push-active-bar" style="display:none;text-align:right;margin-bottom:8px;justify-content:flex-end;gap:12px">
         <button onclick="testNotification()" style="background:none;border:none;font-size:12px;color:#7f77dd;cursor:pointer;padding:0">🔔 SW-Test</button>
-        <button onclick="serverPushTest()" style="background:none;border:none;font-size:12px;color:#7f77dd;cursor:pointer;padding:0">📡 Server-Test</button>
+        <button onclick="serverPushTest(false)" style="background:none;border:none;font-size:12px;color:#7f77dd;cursor:pointer;padding:0">📡 Server-Test</button>
+        <button onclick="serverPushTest(true)" style="background:none;border:none;font-size:12px;color:#888;cursor:pointer;padding:0">📡 Leer</button>
         <button onclick="unsubscribePush()" style="background:none;border:none;font-size:12px;color:#aaa;cursor:pointer;padding:0">Deaktivieren</button>
       </div>
 
@@ -1471,7 +1472,7 @@
     });
   }
 
-  async function serverPushTest() {
+  async function serverPushTest(empty = false) {
     try {
       showToast('Sende Server-Test...');
       const reg = await navigator.serviceWorker.ready;
@@ -1488,7 +1489,8 @@
         console.log('Keys match:', match);
         if (!match) { showToast('⚠️ VAPID-Key-Mismatch! Sub:' + subKey.slice(0,12) + ' App:' + appKey.slice(0,12)); return; }
       }
-      const res = await fetch('https://awvcltzpqxfnuwikbiyl.supabase.co/functions/v1/send-push', {
+      const url = 'https://awvcltzpqxfnuwikbiyl.supabase.co/functions/v1/send-push' + (empty ? '?empty=1' : '');
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
         body: JSON.stringify({ subscription: sub.toJSON() }),
