@@ -1478,7 +1478,7 @@
       if (!sub) { showToast('Keine aktive Subscription'); return; }
       const res = await fetch('https://awvcltzpqxfnuwikbiyl.supabase.co/functions/v1/send-push', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${SUPABASE_KEY}` },
         body: JSON.stringify({ subscription: sub.toJSON() }),
       });
       const text = await res.text();
