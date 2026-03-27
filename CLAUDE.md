@@ -65,12 +65,15 @@ Alle Files in `/Users/Eric_1/haushalt-app/`.
 - Auto-Init: Starterartikel beim ersten Öffnen automatisch angelegt (localStorage-Flag)
 - Realtime-Sync, Dark Mode
 - Supabase: neue Tabelle `notvorrat_items` + Realtime aktiviert
+- Emojis für alle Notvorrat-Artikel in EMOJIS-Map ergänzt
+- **Landing Page Reframe**: Hero → "Haushalt als Team — kein WhatsApp-Chaos", Notvorrat als Differenziator (BWL-Badge), neuer Feature-Card, SEO aktualisiert
+- **Impressum**: Kontaktdaten eingetragen (Eric Schneider, Thorwaldsenstr. 4, 12157 Berlin)
+- **UI-Polish**: Tab-Font 14→12px (4 Tabs passen ohne Umbenennung), Kontraste verbessert (#ccc/#aaa → #999/#888/#777), border-radius vereinheitlicht auf 12px
 
 ---
 
 ## Offen / Nächste Schritte
 
-- Notvorrat-Tab: kleinere UI-Tweaks (Eric beschreibt in nächster Session)
 - Push Notifications Android-Hintergrund-Problem (offen seit 23.03.)
 - Push Notifications iOS: nur ab iOS 16.4+ als installierte PWA
 - **TODO: Google Analytics Entscheidung** — GA4 ist aktuell eingebunden aber ohne Cookie-Banner → rechtlich problematisch (TTDSG/DSGVO). Optionen: (a) GA4 rausschmeißen (empfohlen für jetzt), (b) Cookie-Banner einbauen, (c) Plausible Analytics als cookiefreie Alternative (9€/Monat, kein Banner nötig)
