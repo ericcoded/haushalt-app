@@ -1,5 +1,13 @@
 # HaushaltsPRO – Projektkontext
 
+## Session starten
+
+```bash
+cd /Users/Eric_1/haushalt-app && claude
+```
+
+---
+
 Vanilla JS PWA + Supabase (Auth, Realtime, PostgreSQL) + Vercel → haushaltspro.de
 Alle Files in `/Users/Eric_1/haushalt-app/`.
 
