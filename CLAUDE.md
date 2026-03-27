@@ -73,8 +73,29 @@ Alle Files in `/Users/Eric_1/haushalt-app/`.
 - Notvorrat-Tab: kleinere UI-Tweaks (Eric beschreibt in nächster Session)
 - Push Notifications Android-Hintergrund-Problem (offen seit 23.03.)
 - Push Notifications iOS: nur ab iOS 16.4+ als installierte PWA
+- **TODO: Google Analytics Entscheidung** — GA4 ist aktuell eingebunden aber ohne Cookie-Banner → rechtlich problematisch (TTDSG/DSGVO). Optionen: (a) GA4 rausschmeißen (empfohlen für jetzt), (b) Cookie-Banner einbauen, (c) Plausible Analytics als cookiefreie Alternative (9€/Monat, kein Banner nötig)
 
 ---
+
+## Business / Strategie (via Cowork)
+
+Folgende Dateien im Projektordner enthalten den Business-Kontext:
+
+- `pitch-notizen.md` — Erkenntnisse zum Repositioning des Pitches:
+  - Bisheriges Framing ("Einkaufslisten-App") klingt zu sehr nach Bring! (20M Nutzer)
+  - Neues Framing: "Haushalt als Team — kein WhatsApp-Chaos mehr"
+  - Notvorrat-Tab als potenzieller Differenziator ("einzige App mit BWL-Krisenvorsorge")
+  - Offene Frage: Zielgruppe Paare/WGs vs. Familien — beeinflusst Pitch-Winkel
+  - Pitch-Überarbeitung (index.html Hero + Features) steht noch aus
+
+- `launch-plan.docx` — 6-Wochen-Rollout-Plan für erste 50–100 Nutzer:
+  - Phase 1: Deutsche Communities indirekt (r/FragReddit, r/de_IAmA, r/Finanzen, Feddit.de)
+  - Phase 2: Product Hunt Launch (Vorbereitung ~1 Woche vorher)
+  - Phase 3: Hacker News Show HN
+  - Laufend: Facebook WG-Gruppen, Jodel
+  - Hinweis: Englische Subreddits wurden verworfen (App ist deutsch → kein Conversion-Potenzial)
+
+- `reddit-post-r-de.docx` — Ursprünglicher Reddit-Post (r/de abgelehnt wegen Regel 13)
 
 ## Google Analytics
 G-07QN4QCQZZ — in index.html und app.html eingebunden
