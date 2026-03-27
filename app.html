@@ -341,6 +341,47 @@
     .onboard-skip { background: none; border: none; color: var(--t4); font-size: 13px; cursor: pointer; margin-top: 10px; width: 100%; padding: 6px; transition: color var(--ease); }
     .onboard-skip:hover { color: var(--t2); }
 
+    /* ── NOTVORRAT ─────────────────────────────────── */
+    .nv-progress-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-xl); padding: 14px 16px; margin-bottom: 1.25rem; box-shadow: var(--shadow); }
+    .nv-progress-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .nv-progress-title { font-size: 14px; font-weight: 600; color: var(--t1); }
+    .nv-progress-count { font-size: 13px; color: var(--t3); }
+    .nv-progress-bar { height: 8px; background: var(--surface-2); border-radius: 99px; overflow: hidden; }
+    .nv-progress-fill { height: 100%; background: var(--c-green); border-radius: 99px; transition: width 0.4s ease; }
+    .nv-alert-wrap { background: var(--c-red-bg); border: 1px solid var(--c-red); border-radius: var(--r-lg); padding: 12px 14px; margin-bottom: 1.25rem; }
+    .nv-alert-title { font-size: 12px; font-weight: 600; color: var(--c-red-text); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+    .nv-alert-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--c-red-text); padding: 3px 0; }
+    .nv-einkauf-btn { width: 100%; background: var(--c-primary-bg); color: var(--c-primary-text); border: 1px solid #d0cefc; border-radius: var(--r-md); padding: 10px; font-size: 14px; font-weight: 500; cursor: pointer; margin-bottom: 1.25rem; transition: all var(--ease); }
+    .nv-einkauf-btn:hover { background: var(--c-primary); color: white; }
+    .nv-cat-group { margin-bottom: 1.25rem; }
+    .nv-cat-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .nv-cat-icon { font-size: 16px; }
+    .nv-cat-name { font-size: 12px; font-weight: 600; color: var(--t4); text-transform: uppercase; letter-spacing: .06em; }
+    .nv-cat-prog { font-size: 11px; color: var(--t5); margin-left: auto; }
+    .nv-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-xl); padding: 11px 12px; display: flex; align-items: flex-start; gap: 9px; margin-bottom: 7px; box-shadow: var(--shadow); transition: border-color 0.2s, background 0.2s; }
+    .nv-item.vorhanden { border-color: var(--c-green); background: #f7fdf9; }
+    .nv-check { margin-top: 1px; width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--t5); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; transition: all 0.15s; }
+    .nv-check.done { background: var(--c-green); border-color: var(--c-green); color: white; }
+    .nv-emoji { margin-top: 3px; font-size: 18px; flex-shrink: 0; }
+    .nv-info { flex: 1; min-width: 0; }
+    .nv-name { font-size: 14px; font-weight: 500; color: var(--t1); }
+    .nv-item.vorhanden .nv-name { color: var(--c-green-text); }
+    .nv-soll { font-size: 11px; color: var(--t4); margin-top: 1px; }
+    .nv-meta { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; margin-top: 5px; }
+    .nv-menge-input { width: 72px; font-size: 11px; border: 1px solid var(--border-in); border-radius: var(--r-sm); padding: 3px 6px; background: var(--surface-2); color: var(--t3); outline: none; font-family: inherit; }
+    .nv-menge-input:focus { border-color: var(--c-primary); background: var(--surface); color: var(--t1); }
+    .nv-menge-input::placeholder { color: var(--t5); }
+    .nv-mhd-input { font-size: 11px; border: 1px solid var(--border-in); border-radius: var(--r-sm); padding: 3px 6px; background: var(--surface-2); color: var(--t3); outline: none; font-family: inherit; }
+    .nv-mhd-input.mhd-green { border-color: var(--c-green); background: var(--c-green-bg); color: var(--c-green-text); }
+    .nv-mhd-input.mhd-yellow { border-color: var(--c-yellow); background: var(--c-yellow-bg); color: var(--c-yellow-text); }
+    .nv-mhd-input.mhd-red { border-color: var(--c-red); background: var(--c-red-bg); color: var(--c-red-text); }
+    .nv-del { background: none; border: none; cursor: pointer; color: var(--t5); font-size: 14px; padding: 4px; border-radius: 6px; flex-shrink: 0; transition: all 0.15s; }
+    .nv-del:hover { color: var(--c-red); background: var(--c-red-bg); }
+    .nv-form { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-xl); padding: 14px; margin-top: 0.5rem; }
+    .nv-form-title { font-size: 12px; font-weight: 600; color: var(--t4); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px; }
+    .nv-form input, .nv-form select { width: 100%; padding: 9px 12px; border: 1px solid var(--border-in); border-radius: var(--r-md); font-size: 14px; background: var(--surface); color: var(--t1); outline: none; font-family: inherit; margin-bottom: 8px; }
+    .nv-form input:focus, .nv-form select:focus { border-color: var(--c-primary); }
+
     /* ─────────────────────────────────────────────── */
     /* DARK MODE                                        */
     /* ─────────────────────────────────────────────── */
@@ -426,6 +467,17 @@
       /* Fix login success */
       .login-success { background: #002015; border-color: var(--c-green); }
 
+      /* Notvorrat */
+      .nv-progress-wrap, .nv-item, .nv-form { background: var(--surface); border-color: var(--border); }
+      .nv-item.vorhanden { border-color: #1a6040; background: #001a0e; }
+      .nv-menge-input, .nv-mhd-input { background: var(--surface-2) !important; color: var(--t4) !important; border-color: var(--border-in) !important; }
+      .nv-mhd-input.mhd-green { background: #002015 !important; color: #40c880 !important; border-color: #1a6040 !important; }
+      .nv-mhd-input.mhd-yellow { background: #2e1e00 !important; color: #d4a050 !important; border-color: #5c4200 !important; }
+      .nv-mhd-input.mhd-red { background: #2e0a0a !important; color: #e07070 !important; border-color: #5c1e1e !important; }
+      .nv-form input, .nv-form select { background: var(--surface-2) !important; color: var(--t1) !important; border-color: var(--border-in) !important; }
+      .nv-einkauf-btn { background: #151230; color: #9e96e8; border-color: #3d3880; }
+      .nv-alert-wrap { background: #2e0a0a; border-color: #5c1e1e; }
+
       /* Freq chip hover */
       .freq-chip:hover { background: #151230; }
       .aufg-edit:hover { background: #151230; }
@@ -506,6 +558,7 @@
       <button class="tab active" onclick="showTab('vorrat')">Vorrat <span class="badge" id="badge-vorrat" style="display:none"></span></button>
       <button class="tab" onclick="showTab('einkauf')">Einkauf <span class="badge" id="badge-einkauf" style="display:none"></span></button>
       <button class="tab" onclick="showTab('aufgaben')">Aufgaben <span class="badge" id="badge-aufgaben" style="display:none"></span></button>
+      <button class="tab" onclick="showTab('notvorrat')">Notvorrat</button>
     </div>
 
     <div class="sync-indicator syncing" id="sync-status"><span class="sync-dot"></span>Verbinde...</div>
@@ -652,6 +705,42 @@
         <span class="empty-icon">✅</span>
         <div class="empty-title">Keine offenen Aufgaben</div>
         <div class="empty-sub">Füge oben eine neue Aufgabe hinzu.</div>
+      </div>
+    </div>
+
+    <div id="tab-notvorrat" style="display:none">
+      <!-- Fortschritt -->
+      <div class="nv-progress-wrap">
+        <div class="nv-progress-label">
+          <span class="nv-progress-title">🆘 Notvorrat für 7 Tage</span>
+          <span class="nv-progress-count" id="nv-progress-count">0 von 0 vorhanden</span>
+        </div>
+        <div class="nv-progress-bar">
+          <div class="nv-progress-fill" id="nv-progress-fill" style="width:0%"></div>
+        </div>
+      </div>
+      <!-- MHD-Alarm -->
+      <div id="nv-alert" class="nv-alert-wrap" style="display:none">
+        <div class="nv-alert-title">⚠️ Ablaufdatum bald erreicht oder abgelaufen</div>
+        <div id="nv-alert-list"></div>
+      </div>
+      <!-- Zum Einkauf -->
+      <button class="nv-einkauf-btn" onclick="addNotvorratToEinkauf()">🛒 Fehlende Artikel zur Einkaufsliste hinzufügen</button>
+      <!-- Liste -->
+      <div id="nv-list"></div>
+      <!-- Eigener Artikel -->
+      <div class="nv-form">
+        <div class="nv-form-title">Eigenen Artikel hinzufügen</div>
+        <input type="text" id="nv-input-name" placeholder="Name (z.B. Gaskocher, Konserven...)" />
+        <select id="nv-input-kat">
+          <option value="Getränke">💧 Getränke</option>
+          <option value="Fertigessen">🥫 Fertigessen</option>
+          <option value="Zutaten">🍝 Zutaten</option>
+          <option value="Medizin">💊 Medizin</option>
+          <option value="Hygiene">🧴 Hygiene</option>
+          <option value="Ausrüstung">🔦 Ausrüstung</option>
+        </select>
+        <button class="primary" style="width:100%" onclick="addNotvorratItem()">+ Hinzufügen</button>
       </div>
     </div>
   </div>
@@ -854,6 +943,47 @@
     { name: 'Batterien',       kategorie: 'Haushalt' },
   ];
 
+  const NOTVORRAT_KAT = {
+    'Getränke':    { icon: '💧' },
+    'Fertigessen': { icon: '🥫' },
+    'Zutaten':     { icon: '🍝' },
+    'Medizin':     { icon: '💊' },
+    'Hygiene':     { icon: '🧴' },
+    'Ausrüstung':  { icon: '🔦' },
+  };
+
+  const NOTVORRAT_STARTER = [
+    { name: 'Wasser',                    kategorie: 'Getränke',    menge_soll: '9 L p.P.' },
+    { name: 'Fruchtsäfte & Säfte',       kategorie: 'Getränke',    menge_soll: null },
+    { name: 'Tee & Kaffee',              kategorie: 'Getränke',    menge_soll: null },
+    { name: 'Milch / Milchalternative',  kategorie: 'Getränke',    menge_soll: null },
+    { name: 'Gemüsekonserven',           kategorie: 'Fertigessen', menge_soll: null },
+    { name: 'Hülsenfrüchte',             kategorie: 'Fertigessen', menge_soll: null },
+    { name: 'Fischkonserven',            kategorie: 'Fertigessen', menge_soll: null },
+    { name: 'Saucen & Würzmittel',       kategorie: 'Fertigessen', menge_soll: null },
+    { name: 'Hartkäse',                  kategorie: 'Fertigessen', menge_soll: null },
+    { name: 'Speiseöl',                  kategorie: 'Fertigessen', menge_soll: null },
+    { name: 'Schokolade & Nüsse',        kategorie: 'Fertigessen', menge_soll: null },
+    { name: 'Teigwaren & Reis',          kategorie: 'Zutaten',     menge_soll: null },
+    { name: 'Müesli & Haferflocken',     kategorie: 'Zutaten',     menge_soll: null },
+    { name: 'Fertigsuppen & Bouillon',   kategorie: 'Zutaten',     menge_soll: null },
+    { name: 'Fertiggerichte',            kategorie: 'Zutaten',     menge_soll: null },
+    { name: 'Verbandsmaterial',          kategorie: 'Medizin',     menge_soll: null },
+    { name: 'Schmerzmittel',             kategorie: 'Medizin',     menge_soll: null },
+    { name: 'Fieberthermometer',         kategorie: 'Medizin',     menge_soll: null },
+    { name: 'Händedesinfektionsmittel',  kategorie: 'Medizin',     menge_soll: null },
+    { name: 'Seife & Handseife',         kategorie: 'Hygiene',     menge_soll: null },
+    { name: 'Toilettenpapier',           kategorie: 'Hygiene',     menge_soll: null },
+    { name: 'Zahnpasta',                 kategorie: 'Hygiene',     menge_soll: null },
+    { name: 'Shampoo & Deo',             kategorie: 'Hygiene',     menge_soll: null },
+    { name: 'Taschenlampe & Batterien',  kategorie: 'Ausrüstung',  menge_soll: null },
+    { name: 'Kerzen & Streichhölzer',    kategorie: 'Ausrüstung',  menge_soll: null },
+    { name: 'Batteriebetriebenes Radio', kategorie: 'Ausrüstung',  menge_soll: null },
+    { name: 'Gaskocher',                 kategorie: 'Ausrüstung',  menge_soll: null },
+    { name: 'Bargeld (Kleingeld)',       kategorie: 'Ausrüstung',  menge_soll: null },
+    { name: 'Dosenöffner',               kategorie: 'Ausrüstung',  menge_soll: null },
+  ];
+
   function getEmoji(name) {
     for (const [k, v] of Object.entries(EMOJIS))
       if (name.toLowerCase().includes(k.toLowerCase())) return v;
@@ -883,6 +1013,7 @@
   let items = [];
   let aufgaben = [];
   let routinen = [];
+  let notvorratItems = [];
   let members = [];
   let selectedRoutineTage = new Set();
   let routineFormOpen = false;
@@ -1152,11 +1283,12 @@
     document.getElementById('haushalt-code').textContent = currentHaushalt.code;
     showScreen('app');
     const savedTab = localStorage.getItem('hp-tab');
-    showTab(['vorrat','einkauf','aufgaben'].includes(savedTab) ? savedTab : 'vorrat');
+    showTab(['vorrat','einkauf','aufgaben','notvorrat'].includes(savedTab) ? savedTab : 'vorrat');
     loadItems();
     loadMembers();
     loadAufgaben();
     loadRoutinen();
+    loadNotvorrat();
     subscribeRealtime();
     initPushState();
     startTokenRefresh();
@@ -1194,6 +1326,7 @@
       .on('postgres_changes', { event: '*', schema: 'public', table: 'haushalt_items' }, () => loadItems())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'aufgaben' }, () => loadAufgaben())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'routinen' }, () => loadRoutinen())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notvorrat_items' }, () => loadNotvorrat())
       .subscribe();
   }
 
@@ -1562,18 +1695,201 @@
     }, 'Löscht...');
   }
 
+  // ── NOTVORRAT ──────────────────────────────────────────────────
+
+  async function loadNotvorrat() {
+    if (!currentHaushalt) return;
+    const { data, error } = await db.from('notvorrat_items')
+      .select('*').eq('haushalt_id', currentHaushalt.id).order('created_at');
+    if (error) return;
+    notvorratItems = data;
+
+    // Erste Öffnung: Starterartikel automatisch anlegen
+    const initKey = 'hp-nv-init-' + currentHaushalt.id;
+    if (!data.length && !localStorage.getItem(initKey)) {
+      localStorage.setItem(initKey, '1');
+      await dbWrite(async () => {
+        await db.from('notvorrat_items').insert(
+          NOTVORRAT_STARTER.map(s => ({
+            name: s.name, kategorie: s.kategorie, menge_soll: s.menge_soll,
+            vorhanden: false, haushalt_id: currentHaushalt.id,
+          }))
+        );
+        const { data: d2 } = await db.from('notvorrat_items')
+          .select('*').eq('haushalt_id', currentHaushalt.id).order('created_at');
+        notvorratItems = d2 || [];
+      }, 'Erstelle Notvorrat...');
+    }
+    renderNotvorrat();
+  }
+
+  function nvMhdClass(mhd) {
+    if (!mhd) return null;
+    const diffDays = (new Date(mhd) - new Date()) / 86400000;
+    if (diffDays < 0)   return 'red';
+    if (diffDays < 30)  return 'red';
+    if (diffDays < 180) return 'yellow';
+    return 'green';
+  }
+
+  function nvMhdLabel(mhd) {
+    if (!mhd) return '';
+    return new Date(mhd).toLocaleDateString('de-DE', { month: 'short', year: 'numeric' });
+  }
+
+  function nvItemHtml(i) {
+    const emoji = getEmoji(i.name);
+    const mhd = i.mhd || '';
+    const mhdCls = mhd ? nvMhdClass(mhd) : '';
+    const mengeVal = (i.menge_ist || '').replace(/"/g, '&quot;');
+    const expired = mhd && new Date(mhd) < new Date();
+    const mhdBadge = mhd ? `<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px;white-space:nowrap;background:${mhdCls==='red'?'var(--c-red-bg)':mhdCls==='yellow'?'var(--c-yellow-bg)':'var(--c-green-bg)'};color:${mhdCls==='red'?'var(--c-red-text)':mhdCls==='yellow'?'var(--c-yellow-text)':'var(--c-green-text)'}">${expired?'⚠️ Abgelaufen':nvMhdLabel(mhd)}</span>` : '';
+    return `<div class="nv-item ${i.vorhanden ? 'vorhanden' : ''}">
+      <button class="nv-check ${i.vorhanden ? 'done' : ''}" onclick="toggleVorhanden('${i.id}')">${i.vorhanden ? '✓' : ''}</button>
+      <span class="nv-emoji">${emoji}</span>
+      <div class="nv-info">
+        <div class="nv-name">${esc(i.name)}</div>
+        ${i.menge_soll ? `<div class="nv-soll">Empfehlung: ${esc(i.menge_soll)}</div>` : ''}
+        <div class="nv-meta">
+          <input class="nv-menge-input" type="text" value="${mengeVal}" placeholder="Menge"
+            onblur="updateNV('${i.id}','menge_ist',this.value)"
+            onkeydown="if(event.key==='Enter')this.blur()" />
+          <input class="nv-mhd-input ${mhdCls ? 'mhd-'+mhdCls : ''}" type="date" value="${esc(mhd)}"
+            onchange="updateNV('${i.id}','mhd',this.value||null)"
+            title="Mindesthaltbarkeitsdatum" />
+          ${mhdBadge}
+        </div>
+      </div>
+      <button class="nv-del" onclick="delNV('${i.id}')">✕</button>
+    </div>`;
+  }
+
+  function renderNotvorrat() {
+    const list = document.getElementById('nv-list');
+    if (!list) return;
+
+    const total = notvorratItems.length;
+    const done = notvorratItems.filter(i => i.vorhanden).length;
+    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+    document.getElementById('nv-progress-count').textContent = `${done} von ${total} vorhanden`;
+    document.getElementById('nv-progress-fill').style.width = pct + '%';
+
+    // MHD-Alarm
+    const alertDiv = document.getElementById('nv-alert');
+    const alertList = document.getElementById('nv-alert-list');
+    const expiring = notvorratItems.filter(i => i.mhd && nvMhdClass(i.mhd) !== 'green');
+    if (expiring.length) {
+      alertDiv.style.display = 'block';
+      alertList.innerHTML = expiring.map(i => {
+        const cls = nvMhdClass(i.mhd);
+        const expired = new Date(i.mhd) < new Date();
+        return `<div class="nv-alert-item">
+          <span>${getEmoji(i.name)}</span>
+          <span style="flex:1">${esc(i.name)}</span>
+          <span style="font-size:11px;font-weight:600">${expired ? 'Abgelaufen' : nvMhdLabel(i.mhd)}</span>
+        </div>`;
+      }).join('');
+    } else {
+      alertDiv.style.display = 'none';
+    }
+
+    // Kategorien gruppiert (in fester Reihenfolge)
+    const byKat = {};
+    Object.keys(NOTVORRAT_KAT).forEach(k => { byKat[k] = []; });
+    notvorratItems.forEach(i => {
+      const k = i.kategorie || 'Ausrüstung';
+      if (!byKat[k]) byKat[k] = [];
+      byKat[k].push(i);
+    });
+
+    let html = '';
+    for (const [kat, kitems] of Object.entries(byKat)) {
+      if (!kitems.length) continue;
+      const ki = NOTVORRAT_KAT[kat] || { icon: '📦' };
+      const doneCount = kitems.filter(i => i.vorhanden).length;
+      html += `<div class="nv-cat-group">
+        <div class="nv-cat-header">
+          <span class="nv-cat-icon">${ki.icon}</span>
+          <span class="nv-cat-name">${kat}</span>
+          <span class="nv-cat-prog">${doneCount}/${kitems.length}</span>
+        </div>
+        ${kitems.map(nvItemHtml).join('')}
+      </div>`;
+    }
+    list.innerHTML = html;
+  }
+
+  async function toggleVorhanden(id) {
+    const item = notvorratItems.find(i => i.id === id); if (!item) return;
+    await dbWrite(async () => {
+      await db.from('notvorrat_items').update({ vorhanden: !item.vorhanden }).eq('id', id);
+      await loadNotvorrat();
+    });
+  }
+
+  async function updateNV(id, field, val) {
+    const item = notvorratItems.find(i => i.id === id); if (!item) return;
+    const value = (val === '' || val === null) ? null : val;
+    if (value === (item[field] ?? null)) return;
+    await db.from('notvorrat_items').update({ [field]: value }).eq('id', id);
+    await loadNotvorrat();
+  }
+
+  async function delNV(id) {
+    await dbWrite(async () => {
+      await db.from('notvorrat_items').delete().eq('id', id);
+      await loadNotvorrat();
+    }, 'Löscht...');
+  }
+
+  async function addNotvorratItem() {
+    const nameInp = document.getElementById('nv-input-name');
+    const katSel = document.getElementById('nv-input-kat');
+    const name = nameInp.value.trim(); if (!name) return;
+    nameInp.value = '';
+    await dbWrite(async () => {
+      await db.from('notvorrat_items').insert({
+        name, kategorie: katSel.value, vorhanden: false, haushalt_id: currentHaushalt.id,
+      });
+      await loadNotvorrat();
+    });
+  }
+
+  async function addNotvorratToEinkauf() {
+    const fehlende = notvorratItems.filter(i => !i.vorhanden);
+    if (!fehlende.length) { showToast('Alles vorhanden! 🎉'); return; }
+    await dbWrite(async () => {
+      const existing = new Set(items.filter(i => i.typ === 'einkauf').map(i => i.name.toLowerCase()));
+      const toAdd = fehlende.filter(i => !existing.has(i.name.toLowerCase()));
+      if (toAdd.length > 0) {
+        await db.from('haushalt_items').insert(
+          toAdd.map(i => ({
+            name: i.name, kategorie: 'Sonstiges', status: 'ok',
+            typ: 'einkauf', source: 'manuell', bought: false,
+            haushalt_id: currentHaushalt.id,
+          }))
+        );
+      }
+      await loadItems();
+    }, 'Zur Einkaufsliste...');
+    showToast(`${fehlende.length} Artikel zur Einkaufsliste hinzugefügt`);
+    showTab('einkauf');
+  }
+
   function setFilter(kat) { activeFilter = kat; render(); }
 
   function showTab(t) {
-    document.getElementById('tab-vorrat').style.display = t === 'vorrat' ? 'block' : 'none';
-    document.getElementById('tab-einkauf').style.display = t === 'einkauf' ? 'block' : 'none';
-    document.getElementById('tab-aufgaben').style.display = t === 'aufgaben' ? 'block' : 'none';
+    ['vorrat','einkauf','aufgaben','notvorrat'].forEach(name =>
+      document.getElementById('tab-' + name).style.display = t === name ? 'block' : 'none'
+    );
     document.querySelectorAll('.tab').forEach((el, i) =>
       el.classList.toggle('active',
-        (t === 'vorrat' && i === 0) || (t === 'einkauf' && i === 1) || (t === 'aufgaben' && i === 2)
+        (t === 'vorrat' && i === 0) || (t === 'einkauf' && i === 1) ||
+        (t === 'aufgaben' && i === 2) || (t === 'notvorrat' && i === 3)
       )
     );
     if (t === 'aufgaben') renderAufgaben();
+    if (t === 'notvorrat') renderNotvorrat();
     localStorage.setItem('hp-tab', t);
   }
 
@@ -1948,6 +2264,7 @@
       if (document.activeElement.id === 'shop-input') addManual();
       if (document.activeElement.id === 'join-code') joinHaushalt();
       if (document.activeElement.id === 'aufgabe-titel') addAufgabe();
+      if (document.activeElement.id === 'nv-input-name') addNotvorratItem();
     }
   });
 
