@@ -734,8 +734,8 @@
         <input type="text" id="nv-input-name" placeholder="Name (z.B. Gaskocher, Konserven...)" />
         <select id="nv-input-kat">
           <option value="Getränke">💧 Getränke</option>
-          <option value="Fertigessen">🥫 Fertigessen</option>
-          <option value="Zutaten">🍝 Zutaten</option>
+          <option value="Lebensmittel, essbereit">🥫 Lebensmittel, essbereit</option>
+          <option value="Lebensmittel, zu verarbeiten">🍝 Lebensmittel, zu verarbeiten</option>
           <option value="Medizin">💊 Medizin</option>
           <option value="Hygiene">🧴 Hygiene</option>
           <option value="Ausrüstung">🔦 Ausrüstung</option>
@@ -919,6 +919,9 @@
     'Schmerzmittel':'💊','Thermometer':'🌡️','Desinfektionsmittel':'🧴',
     'Verbandsmaterial':'🩹','Pflaster':'🩹',
     'Radio':'📻','Gaskocher':'🔥','Bargeld':'💶','Dosenöffner':'🔧',
+    'Powerbank':'🔋','Müllsack':'🗑️','Müllsäcke':'🗑️',
+    'Süsses':'🍫','Salziges':'🥜','Wunddesinf':'🩺',
+    'Fleisch, Fisch':'🥩',
   };
 
   const STARTER = [
@@ -950,44 +953,48 @@
   ];
 
   const NOTVORRAT_KAT = {
-    'Getränke':    { icon: '💧' },
-    'Fertigessen': { icon: '🥫' },
-    'Zutaten':     { icon: '🍝' },
-    'Medizin':     { icon: '💊' },
-    'Hygiene':     { icon: '🧴' },
-    'Ausrüstung':  { icon: '🔦' },
+    'Getränke':                      { icon: '💧' },
+    'Lebensmittel, essbereit':       { icon: '🥫' },
+    'Lebensmittel, zu verarbeiten':  { icon: '🍝' },
+    'Medizin':                       { icon: '💊' },
+    'Hygiene':                       { icon: '🧴' },
+    'Ausrüstung':                    { icon: '🔦' },
   };
+  const NV_NO_MHD = new Set(['Hygiene', 'Ausrüstung']);
 
   const NOTVORRAT_STARTER = [
-    { name: 'Wasser',                    kategorie: 'Getränke',    menge_soll: '9 L p.P.' },
-    { name: 'Fruchtsäfte & Säfte',       kategorie: 'Getränke',    menge_soll: null },
-    { name: 'Tee & Kaffee',              kategorie: 'Getränke',    menge_soll: null },
-    { name: 'Milch / Milchalternative',  kategorie: 'Getränke',    menge_soll: null },
-    { name: 'Gemüsekonserven',           kategorie: 'Fertigessen', menge_soll: null },
-    { name: 'Hülsenfrüchte',             kategorie: 'Fertigessen', menge_soll: null },
-    { name: 'Fischkonserven',            kategorie: 'Fertigessen', menge_soll: null },
-    { name: 'Saucen & Würzmittel',       kategorie: 'Fertigessen', menge_soll: null },
-    { name: 'Hartkäse',                  kategorie: 'Fertigessen', menge_soll: null },
-    { name: 'Speiseöl',                  kategorie: 'Fertigessen', menge_soll: null },
-    { name: 'Schokolade & Nüsse',        kategorie: 'Fertigessen', menge_soll: null },
-    { name: 'Teigwaren & Reis',          kategorie: 'Zutaten',     menge_soll: null },
-    { name: 'Müesli & Haferflocken',     kategorie: 'Zutaten',     menge_soll: null },
-    { name: 'Fertigsuppen & Bouillon',   kategorie: 'Zutaten',     menge_soll: null },
-    { name: 'Fertiggerichte',            kategorie: 'Zutaten',     menge_soll: null },
-    { name: 'Verbandsmaterial',          kategorie: 'Medizin',     menge_soll: null },
-    { name: 'Schmerzmittel',             kategorie: 'Medizin',     menge_soll: null },
-    { name: 'Fieberthermometer',         kategorie: 'Medizin',     menge_soll: null },
-    { name: 'Händedesinfektionsmittel',  kategorie: 'Medizin',     menge_soll: null },
-    { name: 'Seife & Handseife',         kategorie: 'Hygiene',     menge_soll: null },
-    { name: 'Toilettenpapier',           kategorie: 'Hygiene',     menge_soll: null },
-    { name: 'Zahnpasta',                 kategorie: 'Hygiene',     menge_soll: null },
-    { name: 'Shampoo & Deo',             kategorie: 'Hygiene',     menge_soll: null },
-    { name: 'Taschenlampe & Batterien',  kategorie: 'Ausrüstung',  menge_soll: null },
-    { name: 'Kerzen & Streichhölzer',    kategorie: 'Ausrüstung',  menge_soll: null },
-    { name: 'Batteriebetriebenes Radio', kategorie: 'Ausrüstung',  menge_soll: null },
-    { name: 'Gaskocher',                 kategorie: 'Ausrüstung',  menge_soll: null },
-    { name: 'Bargeld (Kleingeld)',       kategorie: 'Ausrüstung',  menge_soll: null },
-    { name: 'Dosenöffner',               kategorie: 'Ausrüstung',  menge_soll: null },
+    { name: 'Wasser',                                    kategorie: 'Getränke',                     menge_soll: '9 L p.P.' },
+    { name: 'Säfte & Süssgetränke',                      kategorie: 'Getränke',                     menge_soll: null },
+    { name: 'Tee',                                       kategorie: 'Getränke',                     menge_soll: null },
+    { name: 'Kaffee',                                    kategorie: 'Getränke',                     menge_soll: null },
+    { name: 'Milch / Milchalternative',                  kategorie: 'Getränke',                     menge_soll: null },
+    { name: 'Gemüsekonserven',                           kategorie: 'Lebensmittel, essbereit',      menge_soll: null },
+    { name: 'Hülsenfrüchte',                             kategorie: 'Lebensmittel, essbereit',      menge_soll: null },
+    { name: 'Fleisch, Fisch oder vegetarische Alternative', kategorie: 'Lebensmittel, essbereit',   menge_soll: null },
+    { name: 'Saucen & Würzmittel',                       kategorie: 'Lebensmittel, essbereit',      menge_soll: null },
+    { name: 'Hartkäse',                                  kategorie: 'Lebensmittel, essbereit',      menge_soll: null },
+    { name: 'Speiseöl & Gewürze',                        kategorie: 'Lebensmittel, essbereit',      menge_soll: null },
+    { name: 'Süsses (z.B. Schokolade)',                  kategorie: 'Lebensmittel, essbereit',      menge_soll: null },
+    { name: 'Salziges (z.B. Nüsse)',                     kategorie: 'Lebensmittel, essbereit',      menge_soll: null },
+    { name: 'Teigwaren & Reis',                          kategorie: 'Lebensmittel, zu verarbeiten', menge_soll: null },
+    { name: 'Müesli & Haferflocken',                     kategorie: 'Lebensmittel, zu verarbeiten', menge_soll: null },
+    { name: 'Fertigsuppen',                              kategorie: 'Lebensmittel, zu verarbeiten', menge_soll: null },
+    { name: 'Fertiggerichte',                            kategorie: 'Lebensmittel, zu verarbeiten', menge_soll: null },
+    { name: 'Verbandsmaterial',                          kategorie: 'Medizin',                      menge_soll: null },
+    { name: 'Schmerzmittel',                             kategorie: 'Medizin',                      menge_soll: null },
+    { name: 'Fieberthermometer',                         kategorie: 'Medizin',                      menge_soll: null },
+    { name: 'Wunddesinfektionsmittel',                   kategorie: 'Medizin',                      menge_soll: null },
+    { name: 'Seife, Handseife & Shampoo',                kategorie: 'Hygiene',                      menge_soll: null },
+    { name: 'Toilettenpapier',                           kategorie: 'Hygiene',                      menge_soll: null },
+    { name: 'Zahnpasta',                                 kategorie: 'Hygiene',                      menge_soll: null },
+    { name: 'Müllsäcke',                                 kategorie: 'Hygiene',                      menge_soll: null },
+    { name: 'Taschenlampe & Batterien',                  kategorie: 'Ausrüstung',                   menge_soll: null },
+    { name: 'Kerzen & Streichhölzer',                    kategorie: 'Ausrüstung',                   menge_soll: null },
+    { name: 'Batteriebetriebenes Radio',                 kategorie: 'Ausrüstung',                   menge_soll: null },
+    { name: 'Gaskocher',                                 kategorie: 'Ausrüstung',                   menge_soll: null },
+    { name: 'Powerbank, aufgeladen',                     kategorie: 'Ausrüstung',                   menge_soll: null },
+    { name: 'Bargeld (Kleingeld)',                       kategorie: 'Ausrüstung',                   menge_soll: null },
+    { name: 'Dosenöffner',                               kategorie: 'Ausrüstung',                   menge_soll: null },
   ];
 
   function getEmoji(name) {
@@ -1745,11 +1752,12 @@
 
   function nvItemHtml(i) {
     const emoji = getEmoji(i.name);
+    const showMhd = !NV_NO_MHD.has(i.kategorie);
     const mhd = i.mhd || '';
     const mhdCls = mhd ? nvMhdClass(mhd) : '';
     const mengeVal = (i.menge_ist || '').replace(/"/g, '&quot;');
     const expired = mhd && new Date(mhd) < new Date();
-    const mhdBadge = mhd ? `<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px;white-space:nowrap;background:${mhdCls==='red'?'var(--c-red-bg)':mhdCls==='yellow'?'var(--c-yellow-bg)':'var(--c-green-bg)'};color:${mhdCls==='red'?'var(--c-red-text)':mhdCls==='yellow'?'var(--c-yellow-text)':'var(--c-green-text)'}">${expired?'⚠️ Abgelaufen':nvMhdLabel(mhd)}</span>` : '';
+    const mhdBadge = showMhd && mhd ? `<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px;white-space:nowrap;background:${mhdCls==='red'?'var(--c-red-bg)':mhdCls==='yellow'?'var(--c-yellow-bg)':'var(--c-green-bg)'};color:${mhdCls==='red'?'var(--c-red-text)':mhdCls==='yellow'?'var(--c-yellow-text)':'var(--c-green-text)'}">${expired?'⚠️ Abgelaufen':nvMhdLabel(mhd)}</span>` : '';
     return `<div class="nv-item ${i.vorhanden ? 'vorhanden' : ''}">
       <button class="nv-check ${i.vorhanden ? 'done' : ''}" onclick="toggleVorhanden('${i.id}')">${i.vorhanden ? '✓' : ''}</button>
       <span class="nv-emoji">${emoji}</span>
@@ -1760,9 +1768,9 @@
           <input class="nv-menge-input" type="text" value="${mengeVal}" placeholder="Menge"
             onblur="updateNV('${i.id}','menge_ist',this.value)"
             onkeydown="if(event.key==='Enter')this.blur()" />
-          <input class="nv-mhd-input ${mhdCls ? 'mhd-'+mhdCls : ''}" type="date" value="${esc(mhd)}"
+          ${showMhd ? `<input class="nv-mhd-input ${mhdCls ? 'mhd-'+mhdCls : ''}" type="date" value="${esc(mhd)}"
             onchange="updateNV('${i.id}','mhd',this.value||null)"
-            title="Mindesthaltbarkeitsdatum" />
+            title="Mindesthaltbarkeitsdatum" />` : ''}
           ${mhdBadge}
         </div>
       </div>
