@@ -11,6 +11,8 @@
   <meta name="apple-mobile-web-app-title" content="Haushalt" />
   <meta name="theme-color" content="#7f77dd" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 
   <!-- Google Analytics 4 -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-07QN4QCQZZ"></script>
@@ -49,7 +51,7 @@
       --ease: 0.15s ease;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); min-height: 100vh; color: var(--t1); }
+    body { font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); min-height: 100vh; color: var(--t1); }
 
     /* LOGIN */
     .login-wrap { max-width: 380px; margin: 0 auto; padding: 3rem 1.5rem; }
@@ -87,13 +89,28 @@
     .app-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; }
     .app-title { font-size: 20px; font-weight: 600; color: #1a1a1a; }
     .app-subtitle { font-size: 12px; color: #777; margin-top: 2px; }
-    .header-right { display: flex; align-items: center; gap: 8px; }
+    .header-right { display: flex; align-items: center; gap: 8px; position: relative; }
     .code-badge { background: #eeedfe; color: #534ab7; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 99px; letter-spacing: 1px; cursor: pointer; }
     .logout-btn { background: none; border: 1px solid #e0e0d8; border-radius: 8px; padding: 6px 10px; font-size: 12px; color: #777; cursor: pointer; }
     .logout-btn:hover { background: #f5f5f0; }
+    /* Header Menu */
+    .header-menu-btn { width: 36px; height: 36px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; color: var(--t2); transition: all var(--ease); }
+    .header-menu-btn:hover { background: var(--surface-2); }
+    .header-dropdown { position: absolute; top: calc(100% + 8px); right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow-md); min-width: 200px; z-index: 50; overflow: hidden; display: none; animation: fadeIn 0.12s ease; }
+    .header-dropdown.open { display: block; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(-4px) } to { opacity:1; transform:translateY(0) } }
+    .header-dropdown-code { padding: 12px 14px 10px; border-bottom: 1px solid var(--border); }
+    .header-dropdown-code-label { font-size: 11px; color: var(--t4); font-weight: 500; margin-bottom: 4px; text-transform: uppercase; letter-spacing: .05em; }
+    .header-dropdown-code-val { font-size: 16px; font-weight: 700; color: var(--c-primary); letter-spacing: 2px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+    .header-dropdown-code-val:hover { opacity: 0.75; }
+    .header-dropdown-item { display: flex; align-items: center; gap: 10px; padding: 11px 14px; font-size: 14px; color: var(--t2); cursor: pointer; transition: background var(--ease); border: none; background: none; width: 100%; text-align: left; font-family: inherit; }
+    .header-dropdown-item:hover { background: var(--surface-2); }
+    .header-dropdown-item.danger { color: var(--c-red-text); }
+    .header-dropdown-item.danger:hover { background: var(--c-red-bg); }
 
     .tabs { display: flex; background: #e8e8e3; border-radius: 12px; padding: 3px; margin-bottom: 1.25rem; }
-    .tab { flex: 1; padding: 8px 4px; font-size: 12px; font-weight: 500; border: none; cursor: pointer; background: transparent; color: #888; border-radius: 10px; transition: all 0.15s; position: relative; }
+    .tab { flex: 1; padding: 7px 4px 6px; font-size: 11px; font-weight: 500; border: none; cursor: pointer; background: transparent; color: #888; border-radius: 10px; transition: all 0.15s; position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; line-height: 1.2; }
+    .tab-icon { font-size: 16px; line-height: 1; }
     .tab.active { background: white; color: #1a1a1a; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
     .badge { position: absolute; top: 4px; right: 8px; background: #e24b4a; color: white; font-size: 10px; font-weight: 700; border-radius: 99px; padding: 1px 5px; min-width: 16px; text-align: center; }
 
@@ -146,8 +163,8 @@
     .item-status-text { font-size: 11px; margin-top: 2px; }
     .item-status-text.low { color: #d4910a; }
     .item-status-text.out { color: #a32d2d; }
-    .status-btns { display: flex; gap: 3px; }
-    .sbtn { border: 1px solid #e0e0d8; background: #f5f5f0; border-radius: 8px; padding: 5px 8px; font-size: 12px; cursor: pointer; color: #888; transition: all 0.15s; white-space: nowrap; }
+    .status-btns { display: flex; gap: 4px; }
+    .sbtn { border: 1px solid #e0e0d8; background: #f5f5f0; border-radius: 9px; padding: 7px 10px; font-size: 12px; font-weight: 500; cursor: pointer; color: #888; transition: all 0.15s; white-space: nowrap; min-height: 34px; display: flex; align-items: center; }
     .sbtn.ok { background: #e1f5ee; border-color: #1d9e75; color: #0f6e56; }
     .sbtn.low { background: #fff4d6; border-color: #f0b429; color: #8a6200; }
     .sbtn.out { background: #fcebeb; border-color: #e24b4a; color: #a32d2d; }
@@ -177,7 +194,7 @@
     .manual-menge { width: 100%; padding: 9px 14px; border: 1px solid #e0e0d8; border-radius: 10px; font-size: 13px; background: white; color: var(--t1); outline: none; font-family: inherit; }
     .manual-menge:focus { border-color: var(--c-primary); }
     .manual-menge::placeholder { color: var(--t4); }
-    .shop-menge-input { width: 55px; font-size: 11px; border: 1px solid #e0e0d8; border-radius: 5px; padding: 2px 5px; text-align: center; background: #f0f0eb; color: #999; outline: none; flex-shrink: 0; }
+    .shop-menge-input { width: 70px; font-size: 12px; border: 1px solid #e0e0d8; border-radius: 7px; padding: 5px 7px; text-align: center; background: #f0f0eb; color: #888; outline: none; flex-shrink: 0; min-height: 30px; }
     .shop-menge-input:focus { border-color: #7f77dd; background: white; color: #333; }
     .shop-menge-input::placeholder { color: #ccc; }
     .empty { text-align: center; padding: 3rem 1.5rem; }
@@ -486,6 +503,11 @@
       .shop-menge-input { background: var(--surface-2); color: var(--t4); border-color: var(--border-in); }
       /* Manual add */
       .manual-row-top input, .manual-menge { background: var(--surface) !important; color: var(--t1) !important; border-color: var(--border-in) !important; }
+      /* Header dropdown */
+      .header-dropdown-item { color: var(--t2); }
+      .header-dropdown-item:hover { background: var(--surface-2); }
+      .header-dropdown-item.danger { color: #e07070; }
+      .header-dropdown-item.danger:hover { background: #2e0a0a; }
     }
   </style>
 </head>
@@ -493,8 +515,20 @@
 
 <!-- LOADING -->
 <div id="screen-loading">
-  <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;font-size:36px">🏠</div>
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;gap:16px;background:#f5f5f0">
+    <div style="width:64px;height:64px;background:#7f77dd;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:32px;box-shadow:0 8px 24px rgba(127,119,221,0.35);animation:load-pulse 1.6s ease-in-out infinite">🏠</div>
+    <div style="font-family:'DM Sans',sans-serif;font-size:18px;font-weight:600;color:#1a1a1a;letter-spacing:-0.01em">HaushaltsPRO</div>
+    <div style="display:flex;gap:6px;margin-top:4px">
+      <span style="width:6px;height:6px;border-radius:50%;background:#7f77dd;animation:dot-bounce 1.2s ease-in-out infinite 0s"></span>
+      <span style="width:6px;height:6px;border-radius:50%;background:#7f77dd;animation:dot-bounce 1.2s ease-in-out infinite 0.2s"></span>
+      <span style="width:6px;height:6px;border-radius:50%;background:#7f77dd;animation:dot-bounce 1.2s ease-in-out infinite 0.4s"></span>
+    </div>
+  </div>
 </div>
+<style>
+  @keyframes load-pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.06)} }
+  @keyframes dot-bounce { 0%,100%{transform:translateY(0);opacity:0.4} 50%{transform:translateY(-5px);opacity:1} }
+</style>
 
 <!-- LOGIN -->
 <div id="screen-login" style="display:none">
@@ -549,24 +583,29 @@
         <div class="app-subtitle" id="user-email-display"></div>
       </div>
       <div class="header-right">
-        <span class="code-badge" id="haushalt-code" onclick="copyCode()" title="Code kopieren"></span>
-        <button class="logout-full" onclick="logout()">Ausloggen</button>
+        <button class="header-menu-btn" onclick="toggleHeaderMenu()" id="header-menu-btn" aria-label="Menü">···</button>
+        <div class="header-dropdown" id="header-dropdown">
+          <div class="header-dropdown-code">
+            <div class="header-dropdown-code-label">Haushalt-Code</div>
+            <div class="header-dropdown-code-val" id="haushalt-code" onclick="copyCode()" title="Code kopieren">
+              <span id="haushalt-code-text">—</span> <span style="font-size:13px">📋</span>
+            </div>
+          </div>
+          <div class="members-bar" id="members-bar" style="padding:10px 14px 4px;margin:0;border-bottom:1px solid var(--border);flex-wrap:wrap"></div>
+          <button class="header-dropdown-item" onclick="closeHeaderMenu();logout()">🚪 Ausloggen</button>
+          <button class="header-dropdown-item danger" onclick="closeHeaderMenu();leaveHaushalt()">⚠️ Haushalt verlassen</button>
+        </div>
       </div>
     </div>
 
     <div class="tabs">
-      <button class="tab active" onclick="showTab('vorrat')">Vorrat <span class="badge" id="badge-vorrat" style="display:none"></span></button>
-      <button class="tab" onclick="showTab('einkauf')">Einkauf <span class="badge" id="badge-einkauf" style="display:none"></span></button>
-      <button class="tab" onclick="showTab('aufgaben')">Aufgaben <span class="badge" id="badge-aufgaben" style="display:none"></span></button>
-      <button class="tab" onclick="showTab('notvorrat')">Notvorrat</button>
+      <button class="tab active" onclick="showTab('vorrat')"><span class="tab-icon">🏠</span>Vorrat <span class="badge" id="badge-vorrat" style="display:none"></span></button>
+      <button class="tab" onclick="showTab('einkauf')"><span class="tab-icon">🛒</span>Einkauf <span class="badge" id="badge-einkauf" style="display:none"></span></button>
+      <button class="tab" onclick="showTab('aufgaben')"><span class="tab-icon">✅</span>Aufgaben <span class="badge" id="badge-aufgaben" style="display:none"></span></button>
+      <button class="tab" onclick="showTab('notvorrat')"><span class="tab-icon">🆘</span>Notvorrat</button>
     </div>
 
     <div class="sync-indicator syncing" id="sync-status"><span class="sync-dot"></span>Verbinde...</div>
-
-    <div class="members-bar" id="members-bar"></div>
-    <div style="text-align:right;margin-top:-10px;margin-bottom:1rem">
-      <button onclick="leaveHaushalt()" style="background:none;border:none;font-size:12px;color:#999;cursor:pointer;padding:0">Haushalt verlassen</button>
-    </div>
 
     <div id="tab-vorrat">
       <div id="starter-banner" style="display:none">
@@ -1201,10 +1240,27 @@
     startApp();
   }
 
+  function toggleHeaderMenu() {
+    const dd = document.getElementById('header-dropdown');
+    dd.classList.toggle('open');
+    if (dd.classList.contains('open')) {
+      setTimeout(() => document.addEventListener('click', closeHeaderMenuOutside, { once: true }), 0);
+    }
+  }
+  function closeHeaderMenu() {
+    document.getElementById('header-dropdown').classList.remove('open');
+  }
+  function closeHeaderMenuOutside(e) {
+    if (!document.getElementById('header-dropdown').contains(e.target) && e.target.id !== 'header-menu-btn') {
+      closeHeaderMenu();
+    }
+  }
+
   async function copyCode() {
     if (!currentHaushalt) return;
     await navigator.clipboard.writeText(currentHaushalt.code);
     showToast('Code kopiert: ' + currentHaushalt.code);
+    closeHeaderMenu();
   }
 
   async function leaveHaushalt() {
@@ -1293,7 +1349,7 @@
 
   function startApp() {
     document.getElementById('user-email-display').textContent = currentUser.email;
-    document.getElementById('haushalt-code').textContent = currentHaushalt.code;
+    document.getElementById('haushalt-code-text').textContent = currentHaushalt.code;
     showScreen('app');
     const savedTab = localStorage.getItem('hp-tab');
     showTab(['vorrat','einkauf','aufgaben','notvorrat'].includes(savedTab) ? savedTab : 'vorrat');
