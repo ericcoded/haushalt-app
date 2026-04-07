@@ -64,7 +64,7 @@ Alle Files in `/Users/Eric_1/haushalt-app/`.
 
 ### Session 27. März 2026
 - **Notvorrat-Tab** implementiert (4. Tab)
-- Basis: Schweizer Bundesamt-Merkblatt "Kluger Rat – Notvorrat" (BWL)
+- Basis: Bundesamt für Bevölkerungsschutz und Katastrophenhilfe (BBK) – 10 Tage Notvorrat
 - 29 Starterartikel, 6 Kategorien: Getränke, Fertigessen, Zutaten, Medizin, Hygiene, Ausrüstung
 - Fortschrittsbalken (X von Y vorhanden)
 - MHD-Datum pro Artikel, Ampel: grün >6 Monate, gelb 1–6 Monate, rot <30 Tage/abgelaufen
@@ -74,7 +74,7 @@ Alle Files in `/Users/Eric_1/haushalt-app/`.
 - Realtime-Sync, Dark Mode
 - Supabase: neue Tabelle `notvorrat_items` + Realtime aktiviert
 - Emojis für alle Notvorrat-Artikel in EMOJIS-Map ergänzt
-- **Landing Page Reframe**: Hero → "Haushalt als Team — kein WhatsApp-Chaos", Notvorrat als Differenziator (BWL-Badge), neuer Feature-Card, SEO aktualisiert
+- **Landing Page Reframe**: Hero → "Haushalt als Team — kein WhatsApp-Chaos", Notvorrat als Differenziator (BBK-Badge), neuer Feature-Card, SEO aktualisiert
 - **Impressum**: Kontaktdaten eingetragen (Eric Schneider, Thorwaldsenstr. 4, 12157 Berlin)
 - **UI-Polish**: Tab-Font 14→12px (4 Tabs passen ohne Umbenennung), Kontraste verbessert (#ccc/#aaa → #999/#888/#777), border-radius vereinheitlicht auf 12px
 
